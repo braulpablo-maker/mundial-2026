@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Award, RotateCcw, Plus, Minus, Star, ChevronLeft, ChevronRight, Check, RefreshCw } from 'lucide-react';
+import { Calendar, Users, Award, RotateCcw, Plus, Minus, Star, ChevronLeft, ChevronRight, Check, RefreshCw, CloudLightning } from 'lucide-react';
+import { ref, onValue, set } from 'firebase/database';
+import { database } from './firebase';
 
 const INITIAL_GROUPS = {
   A: { name: 'Grupo A', teams: ['MEX', 'SUD', 'COR', 'RCH'], teamNames: { MEX: 'México', SUD: 'Sudáfrica', COR: 'Corea del Sur', RCH: 'Rep. Checa' } },
@@ -94,7 +96,6 @@ const OFFICIAL_MATCHES = [
 ];
 
 const UNIQUE_DATES = ['11 JUNIO','12 JUNIO','13 JUNIO','14 JUNIO','15 JUNIO','16 JUNIO','17 JUNIO','18 JUNIO','19 JUNIO','20 JUNIO','21 JUNIO','22 JUNIO','23 JUNIO','24 JUNIO','25 JUNIO','26 JUNIO','27 JUNIO'];
-const LS_SCORES = 'mundial2026_scores';
 const LS_FAVS   = 'mundial2026_favs';
 
 function loadLS<T>(key: string, fallback: T): T {
@@ -110,22 +111,46 @@ export default function App() {
   const [selectedDate,  setSelectedDate]  = useState('11 JUNIO');
   const [selectedGroup, setSelectedGroup] = useState('A');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
 
-  const [scores,    setScores]    = useState<Record<string,{home:number|string,away:number|string}>>(() => loadLS(LS_SCORES, {}));
+  // Global scores from Firebase
+  const [scores, setScores] = useState<Record<string,{home:number|string,away:number|string}>>({});
+  
+  // Local favorites
   const [favorites, setFavorites] = useState<string[]>(() => loadLS(LS_FAVS, ['ARG','MEX','COL','URU']));
 
-  // Persist every change
-  useEffect(() => { localStorage.setItem(LS_SCORES, JSON.stringify(scores)); flashSaved(); }, [scores]);
-  useEffect(() => { localStorage.setItem(LS_FAVS,   JSON.stringify(favorites)); }, [favorites]);
+  // Sync favorites to local storage
+  useEffect(() => { localStorage.setItem(LS_FAVS, JSON.stringify(favorites)); }, [favorites]);
 
-  function flashSaved() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1200);
-  }
+  // Sync scores with Firebase Realtime Database
+  useEffect(() => {
+    const scoresRef = ref(database, 'global/scores');
+    
+    const unsubscribe = onValue(scoresRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setScores(data);
+      } else {
+        setScores({}); // Empty if no data yet
+      }
+      setStatus('connected');
+    }, (error) => {
+      console.error('Error connecting to Firebase:', error);
+      setStatus('error');
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleScoreChange = (id: string, field: 'home'|'away', value: number) => {
-    setScores(prev => ({ ...prev, [id]: { ...prev[id], [field]: Math.max(0, value) } }));
+    const updatedValue = Math.max(0, value);
+    // Optimistic update locally
+    setScores(prev => ({ ...prev, [id]: { ...prev[id], [field]: updatedValue } }));
+    
+    // Save to Firebase (merging with existing)
+    const matchRef = ref(database, `global/scores/${id}`);
+    const newMatchData = { ...scores[id], [field]: updatedValue };
+    set(matchRef, newMatchData).catch(err => console.error("Save error:", err));
   };
 
   const toggleFavorite = (team: string) => {
@@ -133,15 +158,21 @@ export default function App() {
   };
 
   const simulateAll = () => {
-    const r: typeof scores = {};
-    OFFICIAL_MATCHES.forEach(m => { r[m.id] = { home: Math.floor(Math.random()*4), away: Math.floor(Math.random()*3) }; });
-    setScores(r);
+    const randomScores: Record<string,{home:number,away:number}> = {};
+    OFFICIAL_MATCHES.forEach(m => { 
+      randomScores[m.id] = { home: Math.floor(Math.random()*4), away: Math.floor(Math.random()*3) }; 
+    });
+    // Optimistic
+    setScores(randomScores);
+    // Save to Firebase
+    set(ref(database, 'global/scores'), randomScores);
   };
 
   const handleReset = () => {
     setScores({});
-    setFavorites(['ARG','MEX','COL','URU']);
     setShowResetConfirm(false);
+    // Erase in Firebase
+    set(ref(database, 'global/scores'), null);
   };
 
   const calculateGroupTable = (gId: GroupId) => {
@@ -203,7 +234,15 @@ export default function App() {
             </button>
           </div>
         </div>
-
+        {/* Estado conectado a la nube global */}
+        <div className="mt-2 flex items-center justify-between text-[10px] bg-slate-900/60 rounded-md px-2.5 py-1 border border-slate-800/80">
+          <span className="text-slate-400 font-medium">Estado Nube Global:</span>
+          <span className={`font-bold flex items-center gap-1 transition-colors ${status==='connected'?'text-emerald-400':status==='connecting'?'text-blue-400':'text-rose-500'}`}>
+            {status === 'connected' ? <><CloudLightning className="w-3.5 h-3.5"/>Conectado (En vivo)</> : 
+             status === 'connecting' ? <><RefreshCw className="w-3 h-3 animate-spin"/>Conectando...</> : 
+             'Error de conexión'}
+          </span>
+        </div>
       </header>
 
       <main className="flex-1 p-3 overflow-y-auto">
@@ -414,7 +453,7 @@ export default function App() {
               <RotateCcw className="w-6 h-6"/>
             </div>
             <h3 className="text-sm font-black text-slate-100">¿Reiniciar todo?</h3>
-            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">Se borrarán todos los marcadores y se reestablecerán los favoritos por defecto.</p>
+            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">Se borrarán todos los marcadores para TODOS los usuarios globalmente.</p>
             <div className="grid grid-cols-2 gap-2.5 mt-5">
               <button onClick={()=>setShowResetConfirm(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-extrabold text-xs py-2 rounded-lg">Cancelar</button>
               <button onClick={handleReset} className="bg-rose-600 hover:bg-rose-500 text-slate-950 font-black text-xs py-2 rounded-lg">Confirmar</button>

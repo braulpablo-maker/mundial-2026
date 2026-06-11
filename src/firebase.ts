@@ -1,18 +1,16 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getDatabase } from "firebase/database";
 
-// ⬇️ PEGÁ ACÁ tu firebaseConfig cuando lo tengas de console.firebase.google.com
 const firebaseConfig = {
-  apiKey: "PEGAR_API_KEY",
-  authDomain: "PEGAR_AUTH_DOMAIN",
-  projectId: "PEGAR_PROJECT_ID",
-  storageBucket: "PEGAR_STORAGE_BUCKET",
-  messagingSenderId: "PEGAR_MESSAGING_SENDER_ID",
-  appId: "PEGAR_APP_ID"
+  apiKey: "AIzaSyAzMUxOnwIpatNglROieQVg8cuhMX9taxk",
+  authDomain: "mundial-2026-e46d8.firebaseapp.com",
+  databaseURL: "https://mundial-2026-e46d8-default-rtdb.firebaseio.com",
+  projectId: "mundial-2026-e46d8",
+  storageBucket: "mundial-2026-e46d8.firebasestorage.app",
+  messagingSenderId: "21267837108",
+  appId: "1:21267837108:web:a55e541a3fa9997e37a7e1",
+  measurementId: "G-V0CHYT9YRH"
 };
 
 export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const APP_ID = 'mundial-2026';
+export const database = getDatabase(app);
