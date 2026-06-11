@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Award, RotateCcw, Plus, Minus, Star, ChevronLeft, ChevronRight, Check, RefreshCw, CloudLightning } from 'lucide-react';
+import { Calendar, Users, Award, Plus, Minus, Star, ChevronLeft, ChevronRight, RefreshCw, CloudLightning } from 'lucide-react';
 import { ref, onValue, set } from 'firebase/database';
 import { database } from './firebase';
 
