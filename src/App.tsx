@@ -203,13 +203,7 @@ export default function App() {
             </button>
           </div>
         </div>
-        {/* Estado guardado */}
-        <div className="mt-2 flex items-center justify-between text-[10px] bg-slate-900/60 rounded-md px-2.5 py-1 border border-slate-800/80">
-          <span className="text-slate-400 font-medium">Almacenamiento:</span>
-          <span className={`font-bold flex items-center gap-1 transition-colors ${saved?'text-emerald-400':'text-slate-500'}`}>
-            {saved ? <><Check className="w-3.5 h-3.5"/>Guardado</> : <><RefreshCw className="w-3 h-3"/>Local (este navegador)</>}
-          </span>
-        </div>
+
       </header>
 
       <main className="flex-1 p-3 overflow-y-auto">
