@@ -110,7 +110,6 @@ export default function App() {
   const [viewMode,  setViewMode]      = useState('day');
   const [selectedDate,  setSelectedDate]  = useState('11 JUNIO');
   const [selectedGroup, setSelectedGroup] = useState('A');
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
 
   // Global scores from Firebase
@@ -155,24 +154,6 @@ export default function App() {
 
   const toggleFavorite = (team: string) => {
     setFavorites(prev => prev.includes(team) ? prev.filter(t => t !== team) : [...prev, team]);
-  };
-
-  const simulateAll = () => {
-    const randomScores: Record<string,{home:number,away:number}> = {};
-    OFFICIAL_MATCHES.forEach(m => { 
-      randomScores[m.id] = { home: Math.floor(Math.random()*4), away: Math.floor(Math.random()*3) }; 
-    });
-    // Optimistic
-    setScores(randomScores);
-    // Save to Firebase
-    set(ref(database, 'global/scores'), randomScores);
-  };
-
-  const handleReset = () => {
-    setScores({});
-    setShowResetConfirm(false);
-    // Erase in Firebase
-    set(ref(database, 'global/scores'), null);
   };
 
   const calculateGroupTable = (gId: GroupId) => {
@@ -224,14 +205,6 @@ export default function App() {
           <div>
             <h1 className="text-xl font-extrabold tracking-wider text-emerald-400">MUNDIAL 2026</h1>
             <p className="text-[11px] text-slate-400 font-medium">Libreta de Pronósticos ⚽</p>
-          </div>
-          <div className="flex gap-1.5 items-center">
-            <button onClick={simulateAll} className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-950 font-black text-xs px-2.5 py-1.5 rounded-lg transition-transform">
-              Simular
-            </button>
-            <button onClick={()=>setShowResetConfirm(true)} className="bg-slate-900 border border-rose-500/20 hover:bg-slate-800 text-rose-400 p-2 rounded-lg transition-colors">
-              <RotateCcw className="w-4 h-4"/>
-            </button>
           </div>
         </div>
         {/* Estado conectado a la nube global */}
@@ -444,23 +417,6 @@ export default function App() {
         )}
 
       </main>
-
-      {/* Modal reset */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-xs w-full text-center shadow-2xl">
-            <div className="w-12 h-12 rounded-full bg-rose-950/50 text-rose-500 flex items-center justify-center mx-auto mb-3.5">
-              <RotateCcw className="w-6 h-6"/>
-            </div>
-            <h3 className="text-sm font-black text-slate-100">¿Reiniciar todo?</h3>
-            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">Se borrarán todos los marcadores para TODOS los usuarios globalmente.</p>
-            <div className="grid grid-cols-2 gap-2.5 mt-5">
-              <button onClick={()=>setShowResetConfirm(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-extrabold text-xs py-2 rounded-lg">Cancelar</button>
-              <button onClick={handleReset} className="bg-rose-600 hover:bg-rose-500 text-slate-950 font-black text-xs py-2 rounded-lg">Confirmar</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Nav */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 border-t border-slate-900 p-2 flex justify-around items-center z-50 shadow-2xl backdrop-blur-md">
