@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Award, Plus, Minus, Star, ChevronLeft, ChevronRight, RefreshCw, CloudLightning } from 'lucide-react';
-import { ref, onValue, set } from 'firebase/database';
+import { Calendar, Users, Award, Plus, Minus, Star, ChevronLeft, ChevronRight, RefreshCw, CloudLightning, Save } from 'lucide-react';
+import { ref, onValue, update } from 'firebase/database';
 import { database } from './firebase';
 
 const INITIAL_GROUPS = {
@@ -113,7 +113,13 @@ export default function App() {
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
 
   // Global scores from Firebase
-  const [scores, setScores] = useState<Record<string,{home:number|string,away:number|string}>>({});
+  const [globalScores, setGlobalScores] = useState<Record<string,{home:number|string,away:number|string}>>({});
+  
+  // Unsaved local edits
+  const [unsavedChanges, setUnsavedChanges] = useState<Record<string,{home:number|string,away:number|string}>>({});
+  
+  const hasUnsavedChanges = Object.keys(unsavedChanges).length > 0;
+  const currentScores = { ...globalScores, ...unsavedChanges };
   
   // Local favorites
   const [favorites, setFavorites] = useState<string[]>(() => loadLS(LS_FAVS, ['ARG','MEX','COL','URU']));
@@ -128,9 +134,9 @@ export default function App() {
     const unsubscribe = onValue(scoresRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setScores(data);
+        setGlobalScores(data);
       } else {
-        setScores({}); // Empty if no data yet
+        setGlobalScores({}); // Empty if no data yet
       }
       setStatus('connected');
     }, (error) => {
@@ -143,13 +149,26 @@ export default function App() {
 
   const handleScoreChange = (id: string, field: 'home'|'away', value: number) => {
     const updatedValue = Math.max(0, value);
-    // Optimistic update locally
-    setScores(prev => ({ ...prev, [id]: { ...prev[id], [field]: updatedValue } }));
-    
-    // Save to Firebase (merging with existing)
-    const matchRef = ref(database, `global/scores/${id}`);
-    const newMatchData = { ...scores[id], [field]: updatedValue };
-    set(matchRef, newMatchData).catch(err => console.error("Save error:", err));
+    const existingMatch = currentScores[id] || {};
+    setUnsavedChanges(prev => ({
+      ...prev,
+      [id]: { ...existingMatch, [field]: updatedValue }
+    }));
+  };
+
+  const handleSave = () => {
+    if (!hasUnsavedChanges) return;
+    const updates: Record<string, any> = {};
+    for (const [id, match] of Object.entries(unsavedChanges)) {
+      updates[`global/scores/${id}`] = match;
+    }
+    update(ref(database), updates)
+      .then(() => setUnsavedChanges({}))
+      .catch(err => console.error("Save error:", err));
+  };
+
+  const handleDiscard = () => {
+    setUnsavedChanges({});
   };
 
   const toggleFavorite = (team: string) => {
@@ -161,7 +180,7 @@ export default function App() {
     const table: Record<string,any> = {};
     group.teams.forEach(t => { table[t] = { team:t, name:(group.teamNames as any)[t], p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 }; });
     OFFICIAL_MATCHES.filter(m => m.group === gId).forEach(m => {
-      const s = scores[m.id];
+      const s = currentScores[m.id];
       if (!s || s.home==='' || s.away==='') return;
       const gh = +s.home, ga = +s.away;
       table[m.home].p++; table[m.away].p++;
@@ -206,6 +225,16 @@ export default function App() {
             <h1 className="text-xl font-extrabold tracking-wider text-emerald-400">MUNDIAL 2026</h1>
             <p className="text-[11px] text-slate-400 font-medium">Libreta de Pronósticos ⚽</p>
           </div>
+          {hasUnsavedChanges && (
+            <div className="flex gap-1.5 items-center">
+              <button onClick={handleDiscard} className="text-rose-400 font-bold text-[10px] px-2 py-1.5 uppercase hover:bg-rose-500/10 rounded-md transition-colors">
+                Descartar
+              </button>
+              <button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-950 font-black text-[10px] uppercase px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-lg shadow-emerald-900/50 transition-all">
+                <Save className="w-3.5 h-3.5" /> Guardar
+              </button>
+            </div>
+          )}
         </div>
         {/* Estado conectado a la nube global */}
         <div className="mt-2 flex items-center justify-between text-[10px] bg-slate-900/60 rounded-md px-2.5 py-1 border border-slate-800/80">
@@ -275,9 +304,10 @@ export default function App() {
                 const group = INITIAL_GROUPS[match.group as GroupId];
                 const homeName = (group.teamNames as any)[match.home];
                 const awayName = (group.teamNames as any)[match.away];
-                const score = scores[match.id] || {home:'',away:''};
+                const score = currentScores[match.id] || {home:'',away:''};
+                const isEdited = unsavedChanges.hasOwnProperty(match.id);
                 return (
-                  <div key={match.id} className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 shadow-xl">
+                  <div key={match.id} className={`bg-slate-900/80 border ${isEdited ? 'border-emerald-500/50 shadow-emerald-900/20' : 'border-slate-800/80'} rounded-2xl p-4 shadow-xl transition-colors`}>
                     {/* Cabecera */}
                     <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase mb-3 pb-2 border-b border-slate-800/60">
                       <span className="bg-slate-800/80 px-2 py-0.5 rounded text-emerald-400">Grupo {match.group}</span>
