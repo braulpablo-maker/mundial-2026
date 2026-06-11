@@ -223,7 +223,7 @@ export default function App() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-xl font-extrabold tracking-wider text-emerald-400">MUNDIAL 2026</h1>
-            <p className="text-[11px] text-slate-400 font-medium">Libreta de Pronósticos ⚽</p>
+            <p className="text-[11px] text-slate-400 font-medium">By Capol!</p>
           </div>
           {hasUnsavedChanges && (
             <div className="flex gap-1.5 items-center">
