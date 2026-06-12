@@ -319,10 +319,28 @@ export default function App() {
   }, []);
 
   // Handlers
-  const handleScoreChange = (id: string, field: 'home'|'away', value: number) => {
-    const v = Math.max(0, value);
-    const existing = currentScores[id] || {};
-    setUnsavedChanges(prev => ({ ...prev, [id]: { ...existing, [field]: v } }));
+  const handleScoreChange = (id: string, field: 'home'|'away', action: 'increment' | 'decrement') => {
+    const existing = currentScores[id] || { home: '', away: '' };
+    const currentVal = existing[field];
+    
+    let newVal: number | string = '';
+    if (action === 'increment') {
+      if (currentVal === '' || currentVal === undefined) {
+        newVal = 0;
+      } else {
+        newVal = +currentVal + 1;
+      }
+    } else if (action === 'decrement') {
+      if (currentVal === '' || currentVal === undefined) {
+        newVal = '';
+      } else if (+currentVal === 0) {
+        newVal = '';
+      } else {
+        newVal = +currentVal - 1;
+      }
+    }
+    
+    setUnsavedChanges(prev => ({ ...prev, [id]: { ...existing, [field]: newVal } }));
   };
 
   const handleSave = () => {
@@ -373,17 +391,16 @@ export default function App() {
 
   // ── Score card reutilizable ──
   const renderScoreControls = (matchId: string) => {
-    const score = currentScores[matchId] || { home: '', away: '' };
     return (
       <div className="grid grid-cols-2 gap-4 mt-3 pt-2.5 border-t border-slate-800/40">
         {(['home', 'away'] as const).map(field => (
           <div key={field} className="flex justify-between items-center bg-slate-950/60 py-1 px-1.5 rounded-xl border border-slate-800/80">
-            <button onClick={() => handleScoreChange(matchId, field, (+score[field] || 0) - 1)}
+            <button onClick={() => handleScoreChange(matchId, field, 'decrement')}
               className="w-8 h-8 rounded-lg bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-300">
               <Minus className="w-4 h-4"/>
             </button>
             <span className="text-[10px] font-extrabold text-slate-500">{field === 'home' ? 'L' : 'V'}</span>
-            <button onClick={() => handleScoreChange(matchId, field, (+score[field] || 0) + 1)}
+            <button onClick={() => handleScoreChange(matchId, field, 'increment')}
               className="w-8 h-8 rounded-lg bg-emerald-600 active:bg-emerald-500 flex items-center justify-center text-slate-950 font-black">
               <Plus className="w-4 h-4"/>
             </button>
