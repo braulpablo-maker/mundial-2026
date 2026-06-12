@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Award, Plus, Minus, Star, ChevronLeft, ChevronRight, RefreshCw, CloudLightning, Save } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Calendar, Users, Award, Plus, Minus, Star, ChevronLeft, ChevronRight, RefreshCw, CloudLightning, Save, Trophy } from 'lucide-react';
 import { ref, onValue, update } from 'firebase/database';
 import { database } from './firebase';
+
+// ═══════════════════════════════════════════
+//  DATOS FASE DE GRUPOS
+// ═══════════════════════════════════════════
 
 const INITIAL_GROUPS = {
   A: { name: 'Grupo A', teams: ['MEX', 'SUD', 'COR', 'RCH'], teamNames: { MEX: 'México', SUD: 'Sudáfrica', COR: 'Corea del Sur', RCH: 'Rep. Checa' } },
@@ -96,64 +100,229 @@ const OFFICIAL_MATCHES = [
 ];
 
 const UNIQUE_DATES = ['11 JUNIO','12 JUNIO','13 JUNIO','14 JUNIO','15 JUNIO','16 JUNIO','17 JUNIO','18 JUNIO','19 JUNIO','20 JUNIO','21 JUNIO','22 JUNIO','23 JUNIO','24 JUNIO','25 JUNIO','26 JUNIO','27 JUNIO'];
-const LS_FAVS   = 'mundial2026_favs';
+const LS_FAVS = 'mundial2026_favs';
 
-function loadLS<T>(key: string, fallback: T): T {
-  try {
-    const v = localStorage.getItem(key);
-    return v ? JSON.parse(v) : fallback;
-  } catch { return fallback; }
+// ═══════════════════════════════════════════
+//  DATOS FASE ELIMINATORIA
+// ═══════════════════════════════════════════
+
+type KnockoutPhase = 'R32' | 'R16' | 'QF' | 'SF' | '3RD' | 'FINAL';
+
+const PHASE_NAMES: Record<KnockoutPhase, string> = {
+  R32: 'Dieciséisavos', R16: 'Octavos', QF: 'Cuartos', SF: 'Semifinal', '3RD': '3° y 4°', FINAL: 'Final',
+};
+
+const KNOCKOUT_PHASES: KnockoutPhase[] = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
+
+// homeRef/awayRef formats: '1A'=1° grupo A, '2B'=2° grupo B, '3_ABCDF'=mejor 3° de esos grupos, 'W73'=ganador M73, 'L101'=perdedor M101
+interface KOMatch {
+  id: string; num: number; phase: KnockoutPhase;
+  date: string; time: string; venue: string;
+  homeRef: string; awayRef: string;
 }
 
-export default function App() {
-  const [activeTab, setActiveTab]     = useState('fixtures');
-  const [viewMode,  setViewMode]      = useState('day');
-  const [selectedDate,  setSelectedDate]  = useState('11 JUNIO');
-  const [selectedGroup, setSelectedGroup] = useState('A');
-  const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+const KNOCKOUT_MATCHES: KOMatch[] = [
+  // ── DIECISÉISAVOS DE FINAL (R32) ──
+  { id:'ko73', num:73, phase:'R32', date:'28 JUNIO', time:'16:00', venue:'Los Ángeles',    homeRef:'2A',  awayRef:'2B' },
+  { id:'ko74', num:74, phase:'R32', date:'29 JUNIO', time:'14:00', venue:'Monterrey',      homeRef:'1C',  awayRef:'2F' },
+  { id:'ko75', num:75, phase:'R32', date:'29 JUNIO', time:'17:30', venue:'Boston',          homeRef:'1E',  awayRef:'3_ABCDF' },
+  { id:'ko76', num:76, phase:'R32', date:'29 JUNIO', time:'22:00', venue:'Houston',         homeRef:'1F',  awayRef:'2C' },
+  { id:'ko77', num:77, phase:'R32', date:'30 JUNIO', time:'18:00', venue:'Nueva York/NJ',   homeRef:'2E',  awayRef:'2I' },
+  { id:'ko78', num:78, phase:'R32', date:'30 JUNIO', time:'14:00', venue:'Filadelfia',      homeRef:'1I',  awayRef:'3_CDFGH' },
+  { id:'ko79', num:79, phase:'R32', date:'30 JUNIO', time:'22:00', venue:'Cd. de México',   homeRef:'1A',  awayRef:'3_CEFHI' },
+  { id:'ko80', num:80, phase:'R32', date:'1 JULIO',  time:'13:00', venue:'Atlanta',         homeRef:'1L',  awayRef:'3_EHIJK' },
+  { id:'ko81', num:81, phase:'R32', date:'1 JULIO',  time:'21:00', venue:'San Francisco',   homeRef:'1G',  awayRef:'3_AEHIJ' },
+  { id:'ko82', num:82, phase:'R32', date:'1 JULIO',  time:'17:00', venue:'Seattle',         homeRef:'1D',  awayRef:'3_BEFIJ' },
+  { id:'ko83', num:83, phase:'R32', date:'2 JULIO',  time:'16:00', venue:'Los Ángeles',     homeRef:'1H',  awayRef:'2J' },
+  { id:'ko84', num:84, phase:'R32', date:'2 JULIO',  time:'20:00', venue:'Toronto',         homeRef:'2K',  awayRef:'2L' },
+  { id:'ko85', num:85, phase:'R32', date:'2 JULIO',  time:'00:00', venue:'Vancouver',       homeRef:'1B',  awayRef:'3_EFGIJ' },
+  { id:'ko86', num:86, phase:'R32', date:'3 JULIO',  time:'15:00', venue:'Dallas',          homeRef:'2D',  awayRef:'2G' },
+  { id:'ko87', num:87, phase:'R32', date:'3 JULIO',  time:'19:00', venue:'Miami',           homeRef:'1J',  awayRef:'2H' },
+  { id:'ko88', num:88, phase:'R32', date:'3 JULIO',  time:'22:30', venue:'Kansas City',     homeRef:'1K',  awayRef:'3_DEIJL' },
+  // ── OCTAVOS DE FINAL (R16) ──
+  { id:'ko89', num:89, phase:'R16', date:'4 JULIO',  time:'14:00', venue:'Houston',         homeRef:'W73', awayRef:'W75' },
+  { id:'ko90', num:90, phase:'R16', date:'4 JULIO',  time:'18:00', venue:'Filadelfia',      homeRef:'W74', awayRef:'W77' },
+  { id:'ko91', num:91, phase:'R16', date:'5 JULIO',  time:'17:00', venue:'Nueva York/NJ',   homeRef:'W76', awayRef:'W78' },
+  { id:'ko92', num:92, phase:'R16', date:'5 JULIO',  time:'21:00', venue:'Cd. de México',   homeRef:'W79', awayRef:'W80' },
+  { id:'ko93', num:93, phase:'R16', date:'6 JULIO',  time:'16:00', venue:'Dallas',          homeRef:'W83', awayRef:'W84' },
+  { id:'ko94', num:94, phase:'R16', date:'6 JULIO',  time:'21:00', venue:'Seattle',         homeRef:'W81', awayRef:'W82' },
+  { id:'ko95', num:95, phase:'R16', date:'7 JULIO',  time:'13:00', venue:'Atlanta',         homeRef:'W86', awayRef:'W88' },
+  { id:'ko96', num:96, phase:'R16', date:'7 JULIO',  time:'17:00', venue:'Vancouver',       homeRef:'W85', awayRef:'W87' },
+  // ── CUARTOS DE FINAL (QF) ──
+  { id:'ko97',  num:97,  phase:'QF', date:'9 JULIO',  time:'17:00', venue:'Boston',         homeRef:'W89', awayRef:'W90' },
+  { id:'ko98',  num:98,  phase:'QF', date:'10 JULIO', time:'18:00', venue:'Los Ángeles',    homeRef:'W93', awayRef:'W94' },
+  { id:'ko99',  num:99,  phase:'QF', date:'11 JULIO', time:'18:00', venue:'Miami',          homeRef:'W91', awayRef:'W92' },
+  { id:'ko100', num:100, phase:'QF', date:'11 JULIO', time:'21:00', venue:'Kansas City',    homeRef:'W95', awayRef:'W96' },
+  // ── SEMIFINALES (SF) ──
+  { id:'ko101', num:101, phase:'SF', date:'14 JULIO', time:'16:00', venue:'Dallas',         homeRef:'W97',  awayRef:'W98' },
+  { id:'ko102', num:102, phase:'SF', date:'15 JULIO', time:'16:00', venue:'Atlanta',        homeRef:'W99',  awayRef:'W100' },
+  // ── 3° Y 4° PUESTO ──
+  { id:'ko103', num:103, phase:'3RD',  date:'18 JULIO', time:'18:00', venue:'Miami',        homeRef:'L101', awayRef:'L102' },
+  // ── FINAL ──
+  { id:'ko104', num:104, phase:'FINAL', date:'19 JULIO', time:'16:00', venue:'Nueva York/NJ', homeRef:'W101', awayRef:'W102' },
+];
 
-  // Global scores from Firebase
-  const [globalScores, setGlobalScores] = useState<Record<string,{home:number|string,away:number|string}>>({});
-  
-  // Unsaved local edits
+// ═══════════════════════════════════════════
+//  FUNCIONES DE CÁLCULO / RESOLUCIÓN
+// ═══════════════════════════════════════════
+
+interface TeamRow { team: string; name: string; p: number; w: number; d: number; l: number; gf: number; ga: number; gd: number; pts: number; }
+interface ResolvedTeam { code: string; name: string; }
+
+/** Calcula tabla de posiciones de un grupo */
+function calcGroupTable(gId: GroupId, scores: Record<string, any>): TeamRow[] {
+  const group = INITIAL_GROUPS[gId];
+  const table: Record<string, any> = {};
+  group.teams.forEach(t => {
+    table[t] = { team: t, name: (group.teamNames as any)[t], p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+  });
+  OFFICIAL_MATCHES.filter(m => m.group === gId).forEach(m => {
+    const s = scores[m.id];
+    if (!s || s.home === '' || s.away === '' || s.home === undefined || s.away === undefined) return;
+    const gh = +s.home, ga = +s.away;
+    table[m.home].p++; table[m.away].p++;
+    table[m.home].gf += gh; table[m.home].ga += ga;
+    table[m.away].gf += ga; table[m.away].ga += gh;
+    if (gh > ga) { table[m.home].w++; table[m.home].pts += 3; table[m.away].l++; }
+    else if (gh < ga) { table[m.away].w++; table[m.away].pts += 3; table[m.home].l++; }
+    else { table[m.home].d++; table[m.away].d++; table[m.home].pts++; table[m.away].pts++; }
+  });
+  return Object.values(table).map((t: any) => ({ ...t, gd: t.gf - t.ga })).sort((a: any, b: any) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+}
+
+
+
+/** Formato legible de una referencia (para mostrar cuando no se resolvió) */
+function refLabel(r: string): string {
+  if (r.startsWith('3_')) return `3° ${r.substring(2).split('').join('/')}`;
+  if (r.startsWith('W')) return `G${r.substring(1)}`;
+  if (r.startsWith('L')) return `P${r.substring(1)}`;
+  return `${r[0]}° ${r.substring(1)}`;
+}
+
+type KOResolution = Record<string, { home: ResolvedTeam | null; away: ResolvedTeam | null }>;
+
+/** Resuelve todos los equipos de la fase eliminatoria basándose en los scores cargados */
+function resolveAllKnockout(scores: Record<string, any>): KOResolution {
+  const result: KOResolution = {};
+
+  // Pre-calcular tablas de todos los grupos
+  const groupTables: Record<string, TeamRow[]> = {};
+  (Object.keys(INITIAL_GROUPS) as GroupId[]).forEach(gId => {
+    groupTables[gId] = calcGroupTable(gId, scores);
+  });
+
+  // Obtener equipo por posición en grupo: '1A' → 1° de grupo A (idx 0), '2B' → 2° de B (idx 1)
+  const getGroupTeam = (ref: string): ResolvedTeam | null => {
+    const pos = parseInt(ref[0]) - 1; // 0-indexed
+    const gId = ref.substring(1) as GroupId;
+    const table = groupTables[gId];
+    if (!table || !table[pos]) return null;
+    // Verificar que al menos 1 partido se jugó
+    if (table[pos].p === 0) return null;
+    return { code: table[pos].team, name: table[pos].name };
+  };
+
+  // Calcular los 8 mejores terceros
+  const allThirds: (TeamRow & { group: string })[] = [];
+  (Object.keys(INITIAL_GROUPS) as GroupId[]).forEach(gId => {
+    const t = groupTables[gId];
+    if (t[2] && t[2].p > 0) allThirds.push({ ...t[2], group: gId });
+  });
+  allThirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+  const qualifyingThirds = allThirds.slice(0, 8);
+  const qualifyingGroupSet = new Set(qualifyingThirds.map(t => t.group));
+
+  // Asignar terceros a partidos R32 (greedy por orden de partido)
+  const thirdAllocation: Record<string, ResolvedTeam> = {};
+  const assignedGroups = new Set<string>();
+  const thirdMatches = KNOCKOUT_MATCHES.filter(m => m.phase === 'R32' && m.awayRef.startsWith('3_')).sort((a, b) => a.num - b.num);
+  for (const match of thirdMatches) {
+    const possibleGroups = match.awayRef.substring(2).split('');
+    const available = qualifyingThirds.filter(t =>
+      possibleGroups.includes(t.group) && qualifyingGroupSet.has(t.group) && !assignedGroups.has(t.group)
+    );
+    if (available.length > 0) {
+      thirdAllocation[match.id] = { code: available[0].team, name: available[0].name };
+      assignedGroups.add(available[0].group);
+    }
+  }
+
+  // Helper: obtener ganador/perdedor de un partido KO ya resuelto
+  const getWinnerOrLoser = (matchId: string, wantWinner: boolean): ResolvedTeam | null => {
+    const score = scores[matchId];
+    if (!score || score.home === '' || score.away === '' || score.home === undefined || score.away === undefined) return null;
+    const h = +score.home, a = +score.away;
+    if (h === a) return null; // Empate: no se puede determinar
+    const side = (h > a) === wantWinner ? 'home' : 'away';
+    return result[matchId]?.[side] || null;
+  };
+
+  // Resolver por fases en orden
+  const phaseOrder: KnockoutPhase[] = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
+  for (const phase of phaseOrder) {
+    const matches = KNOCKOUT_MATCHES.filter(m => m.phase === phase);
+    for (const match of matches) {
+      const resolveRef = (r: string): ResolvedTeam | null => {
+        if (r.startsWith('W')) return getWinnerOrLoser(`ko${r.substring(1)}`, true);
+        if (r.startsWith('L')) return getWinnerOrLoser(`ko${r.substring(1)}`, false);
+        if (r.startsWith('3_')) return thirdAllocation[match.id] || null;
+        return getGroupTeam(r);
+      };
+      result[match.id] = {
+        home: resolveRef(match.homeRef),
+        away: resolveRef(match.awayRef),
+      };
+    }
+  }
+  return result;
+}
+
+// ═══════════════════════════════════════════
+//  LOCAL STORAGE
+// ═══════════════════════════════════════════
+
+function loadLS<T>(key: string, fallback: T): T {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
+}
+
+// ═══════════════════════════════════════════
+//  COMPONENTE PRINCIPAL
+// ═══════════════════════════════════════════
+
+export default function App() {
+  const [activeTab, setActiveTab]         = useState('fixtures');
+  const [viewMode,  setViewMode]          = useState('day');
+  const [selectedDate, setSelectedDate]   = useState('11 JUNIO');
+  const [selectedGroup, setSelectedGroup] = useState('A');
+  const [koPhase, setKoPhase]             = useState<KnockoutPhase>('R32');
+  const [status, setStatus]               = useState<'connecting'|'connected'|'error'>('connecting');
+
+  const [globalScores, setGlobalScores]   = useState<Record<string,{home:number|string,away:number|string}>>({});
   const [unsavedChanges, setUnsavedChanges] = useState<Record<string,{home:number|string,away:number|string}>>({});
-  
   const hasUnsavedChanges = Object.keys(unsavedChanges).length > 0;
   const currentScores = { ...globalScores, ...unsavedChanges };
-  
-  // Local favorites
-  const [favorites, setFavorites] = useState<string[]>(() => loadLS(LS_FAVS, ['ARG','MEX','COL','URU']));
 
-  // Sync favorites to local storage
+  const [favorites, setFavorites] = useState<string[]>(() => loadLS(LS_FAVS, ['ARG','MEX','COL','URU']));
   useEffect(() => { localStorage.setItem(LS_FAVS, JSON.stringify(favorites)); }, [favorites]);
 
-  // Sync scores with Firebase Realtime Database
+  // Firebase sync
   useEffect(() => {
     const scoresRef = ref(database, 'global/scores');
-    
     const unsubscribe = onValue(scoresRef, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        setGlobalScores(data);
-      } else {
-        setGlobalScores({}); // Empty if no data yet
-      }
+      setGlobalScores(data || {});
       setStatus('connected');
-    }, (error) => {
-      console.error('Error connecting to Firebase:', error);
-      setStatus('error');
-    });
-
+    }, () => setStatus('error'));
     return () => unsubscribe();
   }, []);
 
+  // Handlers
   const handleScoreChange = (id: string, field: 'home'|'away', value: number) => {
-    const updatedValue = Math.max(0, value);
-    const existingMatch = currentScores[id] || {};
-    setUnsavedChanges(prev => ({
-      ...prev,
-      [id]: { ...existingMatch, [field]: updatedValue }
-    }));
+    const v = Math.max(0, value);
+    const existing = currentScores[id] || {};
+    setUnsavedChanges(prev => ({ ...prev, [id]: { ...existing, [field]: v } }));
   };
 
   const handleSave = () => {
@@ -162,63 +331,142 @@ export default function App() {
     for (const [id, match] of Object.entries(unsavedChanges)) {
       updates[`global/scores/${id}`] = match;
     }
-    update(ref(database), updates)
-      .then(() => setUnsavedChanges({}))
-      .catch(err => console.error("Save error:", err));
+    update(ref(database), updates).then(() => setUnsavedChanges({})).catch(err => console.error("Save error:", err));
   };
 
-  const handleDiscard = () => {
-    setUnsavedChanges({});
-  };
+  const handleDiscard = () => setUnsavedChanges({});
 
   const toggleFavorite = (team: string) => {
     setFavorites(prev => prev.includes(team) ? prev.filter(t => t !== team) : [...prev, team]);
   };
 
-  const calculateGroupTable = (gId: GroupId) => {
-    const group = INITIAL_GROUPS[gId];
-    const table: Record<string,any> = {};
-    group.teams.forEach(t => { table[t] = { team:t, name:(group.teamNames as any)[t], p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 }; });
-    OFFICIAL_MATCHES.filter(m => m.group === gId).forEach(m => {
-      const s = currentScores[m.id];
-      if (!s || s.home==='' || s.away==='') return;
-      const gh = +s.home, ga = +s.away;
-      table[m.home].p++; table[m.away].p++;
-      table[m.home].gf += gh; table[m.home].ga += ga;
-      table[m.away].gf += ga; table[m.away].ga += gh;
-      if (gh>ga) { table[m.home].w++; table[m.home].pts+=3; table[m.away].l++; }
-      else if (gh<ga) { table[m.away].w++; table[m.away].pts+=3; table[m.home].l++; }
-      else { table[m.home].d++; table[m.away].d++; table[m.home].pts++; table[m.away].pts++; }
-    });
-    return Object.values(table).map(t=>({...t, gd:t.gf-t.ga})).sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);
-  };
+  // Computed
+  const calculateGroupTable = (gId: GroupId) => calcGroupTable(gId, currentScores);
 
   const getAllThirds = () => {
     const thirds: any[] = [];
     (Object.keys(INITIAL_GROUPS) as GroupId[]).forEach(gId => {
       const s = calculateGroupTable(gId);
-      if (s[2]) thirds.push({...s[2], group:gId});
+      if (s[2]) thirds.push({...s[2], group: gId});
     });
-    return thirds.sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf).slice(0,8);
+    return thirds.sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf).slice(0,8);
   };
 
+  const knockoutResolution = useMemo(() => resolveAllKnockout(currentScores), [currentScores]);
+
   const filteredMatches = OFFICIAL_MATCHES.filter(m => {
-    if (viewMode==='day')   return m.date===selectedDate;
-    if (viewMode==='group') return m.group===selectedGroup;
-    return favorites.includes(m.home)||favorites.includes(m.away);
+    if (viewMode === 'day')   return m.date === selectedDate;
+    if (viewMode === 'group') return m.group === selectedGroup;
+    return favorites.includes(m.home) || favorites.includes(m.away);
   });
 
-  const tabBtn = (id:string, icon:React.ReactNode, label:string) => (
-    <button onClick={()=>setActiveTab(id)}
-      className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${activeTab===id?'text-emerald-400 bg-slate-900':'text-slate-500'}`}>
-      {icon}<span className="text-[10px] font-black uppercase tracking-wider">{label}</span>
+  const koMatchesForPhase = KNOCKOUT_MATCHES.filter(m => m.phase === koPhase).sort((a,b) => a.num - b.num);
+
+  // ── Render helpers ──
+
+  const tabBtn = (id: string, icon: React.ReactNode, label: string) => (
+    <button onClick={() => setActiveTab(id)}
+      className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition-all ${activeTab === id ? 'text-emerald-400 bg-slate-900' : 'text-slate-500'}`}>
+      {icon}<span className="text-[9px] font-black uppercase tracking-wider">{label}</span>
     </button>
   );
+
+  // ── Score card reutilizable ──
+  const renderScoreControls = (matchId: string) => {
+    const score = currentScores[matchId] || { home: '', away: '' };
+    return (
+      <div className="grid grid-cols-2 gap-4 mt-3 pt-2.5 border-t border-slate-800/40">
+        {(['home', 'away'] as const).map(field => (
+          <div key={field} className="flex justify-between items-center bg-slate-950/60 py-1 px-1.5 rounded-xl border border-slate-800/80">
+            <button onClick={() => handleScoreChange(matchId, field, (+score[field] || 0) - 1)}
+              className="w-8 h-8 rounded-lg bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-300">
+              <Minus className="w-4 h-4"/>
+            </button>
+            <span className="text-[10px] font-extrabold text-slate-500">{field === 'home' ? 'L' : 'V'}</span>
+            <button onClick={() => handleScoreChange(matchId, field, (+score[field] || 0) + 1)}
+              className="w-8 h-8 rounded-lg bg-emerald-600 active:bg-emerald-500 flex items-center justify-center text-slate-950 font-black">
+              <Plus className="w-4 h-4"/>
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // ── Render de tarjeta para partido eliminatorio ──
+  const renderKnockoutCard = (match: KOMatch) => {
+    const resolved = knockoutResolution[match.id] || { home: null, away: null };
+    const score = currentScores[match.id] || { home: '', away: '' };
+    const isEdited = unsavedChanges.hasOwnProperty(match.id);
+
+    const renderTeamSlot = (team: ResolvedTeam | null, refStr: string, side: 'home' | 'away') => {
+      const isFav = team ? favorites.includes(team.code) : false;
+      return (
+        <div className="col-span-4 flex flex-col items-center text-center relative">
+          {team && (
+            <button onClick={() => toggleFavorite(team.code)}
+              className={`absolute -top-3 ${side === 'home' ? 'left-1' : 'right-1'} p-1 z-10`}>
+              <Star className={`w-4 h-4 ${isFav ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}`}/>
+            </button>
+          )}
+          <span className={`font-black text-sm tracking-tight ${team ? 'text-slate-200' : 'text-slate-500'}`}>
+            {team ? team.code : refLabel(refStr)}
+          </span>
+          <span className={`text-[11px] truncate max-w-full ${team ? 'text-slate-400' : 'text-slate-600 italic'}`}>
+            {team ? team.name : 'Por definir'}
+          </span>
+        </div>
+      );
+    };
+
+    // Badge de fase con color según ronda
+    const phaseBadgeColor: Record<KnockoutPhase, string> = {
+      R32: 'text-sky-400 bg-sky-950/60',
+      R16: 'text-violet-400 bg-violet-950/60',
+      QF:  'text-amber-400 bg-amber-950/60',
+      SF:  'text-rose-400 bg-rose-950/60',
+      '3RD': 'text-orange-400 bg-orange-950/60',
+      FINAL: 'text-yellow-300 bg-yellow-950/60',
+    };
+
+    return (
+      <div key={match.id} className={`bg-slate-900/80 border ${isEdited ? 'border-emerald-500/50 shadow-emerald-900/20' : 'border-slate-800/80'} rounded-2xl p-4 shadow-xl transition-colors`}>
+        {/* Header */}
+        <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase mb-3 pb-2 border-b border-slate-800/60">
+          <span className={`px-2 py-0.5 rounded font-black ${phaseBadgeColor[match.phase]}`}>
+            M{match.num}
+          </span>
+          <span>{match.date} · {match.time} ARG</span>
+          <span className="text-slate-500 truncate max-w-[110px] text-right">{match.venue}</span>
+        </div>
+        {/* Scoreboard */}
+        <div className="grid grid-cols-12 items-center gap-1.5 my-2.5">
+          {renderTeamSlot(resolved.home, match.homeRef, 'home')}
+          <div className="col-span-4 bg-slate-950 border border-emerald-500/20 rounded-xl py-1.5 px-2 flex justify-center items-center gap-2.5">
+            <span className="text-2xl font-black text-emerald-400 min-w-[24px] text-center">
+              {score.home !== '' && score.home !== undefined ? score.home : '-'}
+            </span>
+            <span className="text-xs font-bold text-slate-700">:</span>
+            <span className="text-2xl font-black text-emerald-400 min-w-[24px] text-center">
+              {score.away !== '' && score.away !== undefined ? score.away : '-'}
+            </span>
+          </div>
+          {renderTeamSlot(resolved.away, match.awayRef, 'away')}
+        </div>
+        {/* Controls */}
+        {renderScoreControls(match.id)}
+      </div>
+    );
+  };
+
+  // ═══════════════════════════════════════
+  //  RENDER
+  // ═══════════════════════════════════════
 
   return (
     <div className="max-w-md mx-auto bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-28 shadow-2xl relative select-none">
 
-      {/* HEADER */}
+      {/* ── HEADER ── */}
       <header className="bg-gradient-to-r from-emerald-950 via-slate-950 to-slate-950 p-4 sticky top-0 z-40 border-b border-emerald-500/20 shadow-xl">
         <div className="flex justify-between items-center">
           <div>
@@ -231,57 +479,54 @@ export default function App() {
                 Descartar
               </button>
               <button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-950 font-black text-[10px] uppercase px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-lg shadow-emerald-900/50 transition-all">
-                <Save className="w-3.5 h-3.5" /> Guardar
+                <Save className="w-3.5 h-3.5"/> Guardar
               </button>
             </div>
           )}
         </div>
-        {/* Estado conectado a la nube global */}
         <div className="mt-2 flex items-center justify-between text-[10px] bg-slate-900/60 rounded-md px-2.5 py-1 border border-slate-800/80">
           <span className="text-slate-400 font-medium">Estado Nube Global:</span>
           <span className={`font-bold flex items-center gap-1 transition-colors ${status==='connected'?'text-emerald-400':status==='connecting'?'text-blue-400':'text-rose-500'}`}>
-            {status === 'connected' ? <><CloudLightning className="w-3.5 h-3.5"/>Conectado (En vivo)</> : 
-             status === 'connecting' ? <><RefreshCw className="w-3 h-3 animate-spin"/>Conectando...</> : 
+            {status === 'connected' ? <><CloudLightning className="w-3.5 h-3.5"/>Conectado (En vivo)</> :
+             status === 'connecting' ? <><RefreshCw className="w-3 h-3 animate-spin"/>Conectando...</> :
              'Error de conexión'}
           </span>
         </div>
       </header>
 
+      {/* ── MAIN ── */}
       <main className="flex-1 p-3 overflow-y-auto">
 
-        {/* ====== FIXTURES ====== */}
-        {activeTab==='fixtures' && (
+        {/* ══════ FIXTURES (Fase de Grupos) ══════ */}
+        {activeTab === 'fixtures' && (
           <div>
-            {/* Sub-menú */}
             <div className="flex bg-slate-900/40 p-1 rounded-xl mb-4 border border-slate-800">
-              {(['day','group','favs'] as const).map((m,i)=>(
-                <button key={m} onClick={()=>setViewMode(m)}
+              {(['day','group','favs'] as const).map((m,i) => (
+                <button key={m} onClick={() => setViewMode(m)}
                   className={`flex-1 py-2 text-center font-bold text-xs rounded-lg transition-all ${viewMode===m?'bg-emerald-500 text-slate-950 shadow':'text-slate-400'}`}>
                   {['Por Día','Por Grupo','Favoritos ⭐'][i]}
                 </button>
               ))}
             </div>
 
-            {/* Selector de fecha */}
-            {viewMode==='day' && (
+            {viewMode === 'day' && (
               <div className="flex items-center gap-1 mb-4 bg-slate-900 p-2 rounded-xl border border-slate-800">
-                <button onClick={()=>{const i=UNIQUE_DATES.indexOf(selectedDate);if(i>0)setSelectedDate(UNIQUE_DATES[i-1]);}}
+                <button onClick={() => { const i = UNIQUE_DATES.indexOf(selectedDate); if (i > 0) setSelectedDate(UNIQUE_DATES[i-1]); }}
                   className="p-1.5 text-emerald-400 active:scale-95 transition-transform">
                   <ChevronLeft className="w-5 h-5"/>
                 </button>
                 <div className="flex-1 text-center font-black text-sm text-emerald-400 tracking-wider">{selectedDate}</div>
-                <button onClick={()=>{const i=UNIQUE_DATES.indexOf(selectedDate);if(i<UNIQUE_DATES.length-1)setSelectedDate(UNIQUE_DATES[i+1]);}}
+                <button onClick={() => { const i = UNIQUE_DATES.indexOf(selectedDate); if (i < UNIQUE_DATES.length-1) setSelectedDate(UNIQUE_DATES[i+1]); }}
                   className="p-1.5 text-emerald-400 active:scale-95 transition-transform">
                   <ChevronRight className="w-5 h-5"/>
                 </button>
               </div>
             )}
 
-            {/* Selector de grupo */}
-            {viewMode==='group' && (
+            {viewMode === 'group' && (
               <div className="grid grid-cols-6 gap-1.5 mb-4">
-                {Object.keys(INITIAL_GROUPS).map(g=>(
-                  <button key={g} onClick={()=>setSelectedGroup(g)}
+                {Object.keys(INITIAL_GROUPS).map(g => (
+                  <button key={g} onClick={() => setSelectedGroup(g)}
                     className={`py-1.5 font-bold text-xs rounded-md border transition-all ${selectedGroup===g?'bg-emerald-500 text-slate-950 border-emerald-400 scale-105':'bg-slate-900 text-slate-400 border-slate-800'}`}>
                     {g}
                   </button>
@@ -289,8 +534,7 @@ export default function App() {
               </div>
             )}
 
-            {/* Vacío favoritos */}
-            {viewMode==='favs' && filteredMatches.length===0 && (
+            {viewMode === 'favs' && filteredMatches.length === 0 && (
               <div className="text-center py-10 px-4 text-slate-500 text-xs bg-slate-900/20 rounded-xl border border-dashed border-slate-800">
                 <Star className="w-8 h-8 text-slate-700 mx-auto mb-2"/>
                 <p>No hay favoritos aún.</p>
@@ -298,9 +542,8 @@ export default function App() {
               </div>
             )}
 
-            {/* Lista de partidos */}
             <div className="space-y-3.5">
-              {filteredMatches.map(match=>{
+              {filteredMatches.map(match => {
                 const group = INITIAL_GROUPS[match.group as GroupId];
                 const homeName = (group.teamNames as any)[match.home];
                 const awayName = (group.teamNames as any)[match.away];
@@ -308,57 +551,37 @@ export default function App() {
                 const isEdited = unsavedChanges.hasOwnProperty(match.id);
                 return (
                   <div key={match.id} className={`bg-slate-900/80 border ${isEdited ? 'border-emerald-500/50 shadow-emerald-900/20' : 'border-slate-800/80'} rounded-2xl p-4 shadow-xl transition-colors`}>
-                    {/* Cabecera */}
                     <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase mb-3 pb-2 border-b border-slate-800/60">
                       <span className="bg-slate-800/80 px-2 py-0.5 rounded text-emerald-400">Grupo {match.group}</span>
                       <span>{match.date} · {match.time} ARG</span>
                       <span className="text-slate-500 truncate max-w-[110px] text-right">{match.venue}</span>
                     </div>
-                    {/* Tablero */}
                     <div className="grid grid-cols-12 items-center gap-1.5 my-2.5">
-                      {/* Local */}
                       <div className="col-span-4 flex flex-col items-center text-center relative">
-                        <button onClick={()=>toggleFavorite(match.home)} className="absolute -top-3 left-1 p-1 z-10">
+                        <button onClick={() => toggleFavorite(match.home)} className="absolute -top-3 left-1 p-1 z-10">
                           <Star className={`w-4 h-4 ${favorites.includes(match.home)?'fill-amber-400 text-amber-400':'text-slate-700'}`}/>
                         </button>
                         <span className="font-black text-sm text-slate-200">{match.home}</span>
                         <span className="text-[11px] text-slate-400 truncate max-w-full">{homeName}</span>
                       </div>
-                      {/* Score */}
                       <div className="col-span-4 bg-slate-950 border border-emerald-500/20 rounded-xl py-1.5 px-2 flex justify-center items-center gap-2.5">
                         <span className="text-2xl font-black text-emerald-400 min-w-[24px] text-center">
-                          {score.home!==''&&score.home!==undefined?score.home:'-'}
+                          {score.home !== '' && score.home !== undefined ? score.home : '-'}
                         </span>
                         <span className="text-xs font-bold text-slate-700">:</span>
                         <span className="text-2xl font-black text-emerald-400 min-w-[24px] text-center">
-                          {score.away!==''&&score.away!==undefined?score.away:'-'}
+                          {score.away !== '' && score.away !== undefined ? score.away : '-'}
                         </span>
                       </div>
-                      {/* Visitante */}
                       <div className="col-span-4 flex flex-col items-center text-center relative">
-                        <button onClick={()=>toggleFavorite(match.away)} className="absolute -top-3 right-1 p-1 z-10">
+                        <button onClick={() => toggleFavorite(match.away)} className="absolute -top-3 right-1 p-1 z-10">
                           <Star className={`w-4 h-4 ${favorites.includes(match.away)?'fill-amber-400 text-amber-400':'text-slate-700'}`}/>
                         </button>
                         <span className="font-black text-sm text-slate-200">{match.away}</span>
                         <span className="text-[11px] text-slate-400 truncate max-w-full">{awayName}</span>
                       </div>
                     </div>
-                    {/* Controles */}
-                    <div className="grid grid-cols-2 gap-4 mt-3 pt-2.5 border-t border-slate-800/40">
-                      {(['home','away'] as const).map(field=>(
-                        <div key={field} className="flex justify-between items-center bg-slate-950/60 py-1 px-1.5 rounded-xl border border-slate-800/80">
-                          <button onClick={()=>handleScoreChange(match.id,field,(+score[field]||0)-1)}
-                            className="w-8 h-8 rounded-lg bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-300">
-                            <Minus className="w-4 h-4"/>
-                          </button>
-                          <span className="text-[10px] font-extrabold text-slate-500">{field==='home'?'L':'V'}</span>
-                          <button onClick={()=>handleScoreChange(match.id,field,(+score[field]||0)+1)}
-                            className="w-8 h-8 rounded-lg bg-emerald-600 active:bg-emerald-500 flex items-center justify-center text-slate-950 font-black">
-                            <Plus className="w-4 h-4"/>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                    {renderScoreControls(match.id)}
                   </div>
                 );
               })}
@@ -366,16 +589,16 @@ export default function App() {
           </div>
         )}
 
-        {/* ====== TABLAS ====== */}
-        {activeTab==='tables' && (
+        {/* ══════ TABLAS ══════ */}
+        {activeTab === 'tables' && (
           <div className="space-y-4">
             <div className="bg-slate-900 border border-slate-800/80 p-4 rounded-2xl shadow-xl">
               <h2 className="text-sm font-black text-emerald-400 tracking-wider mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4"/> POSICIONES — GRUPO {selectedGroup}
               </h2>
               <div className="grid grid-cols-6 gap-1.5 mb-4">
-                {Object.keys(INITIAL_GROUPS).map(g=>(
-                  <button key={g} onClick={()=>setSelectedGroup(g)}
+                {Object.keys(INITIAL_GROUPS).map(g => (
+                  <button key={g} onClick={() => setSelectedGroup(g)}
                     className={`py-1.5 text-center font-bold text-[11px] rounded-lg transition-all ${selectedGroup===g?'bg-emerald-500 text-slate-950 scale-105':'bg-slate-950 text-slate-400'}`}>
                     {g}
                   </button>
@@ -384,23 +607,21 @@ export default function App() {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="text-slate-500 border-b border-slate-800 font-bold uppercase text-[10px]">
-                    <th className="py-2">Equipo</th>
-                    <th className="py-2 text-center">PJ</th>
-                    <th className="py-2 text-center">GF</th>
-                    <th className="py-2 text-center">DG</th>
+                    <th className="py-2">Equipo</th><th className="py-2 text-center">PJ</th>
+                    <th className="py-2 text-center">GF</th><th className="py-2 text-center">DG</th>
                     <th className="py-2 text-right text-emerald-400">Pts</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {calculateGroupTable(selectedGroup as GroupId).map((row,idx)=>(
-                    <tr key={row.team} className={`border-b border-slate-800/40 ${idx<2?'bg-emerald-950/10':''}`}>
+                  {calculateGroupTable(selectedGroup as GroupId).map((row, idx) => (
+                    <tr key={row.team} className={`border-b border-slate-800/40 ${idx < 2 ? 'bg-emerald-950/10' : ''}`}>
                       <td className="py-2.5 font-bold flex items-center gap-2">
                         <span className="text-[10px] text-slate-500 w-3">{idx+1}</span>
                         <span className="text-slate-200">{row.name}</span>
                       </td>
                       <td className="py-2.5 text-center text-slate-400">{row.p}</td>
                       <td className="py-2.5 text-center text-slate-400">{row.gf}</td>
-                      <td className="py-2.5 text-center font-semibold text-slate-300">{row.gd>0?`+${row.gd}`:row.gd}</td>
+                      <td className="py-2.5 text-center font-semibold text-slate-300">{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
                       <td className="py-2.5 text-right font-black text-emerald-400 text-sm">{row.pts}</td>
                     </tr>
                   ))}
@@ -410,26 +631,24 @@ export default function App() {
           </div>
         )}
 
-        {/* ====== TERCEROS ====== */}
-        {activeTab==='thirds' && (
+        {/* ══════ TERCEROS ══════ */}
+        {activeTab === 'thirds' && (
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
             <h2 className="text-sm font-black text-emerald-400 tracking-wider mb-2 flex items-center gap-2">
               <Award className="w-4 h-4"/> MEJORES TERCEROS
             </h2>
             <p className="text-[11px] text-slate-400 mb-4 leading-relaxed">
-              Los 8 mejores terceros de los 12 grupos clasifican a la siguiente ronda.
+              Los 8 mejores terceros de los 12 grupos clasifican a Dieciséisavos.
             </p>
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="text-slate-500 border-b border-slate-800 font-bold uppercase text-[10px]">
-                  <th className="py-2">Equipo</th>
-                  <th className="py-2 text-center">PJ</th>
-                  <th className="py-2 text-center">DG</th>
-                  <th className="py-2 text-right text-emerald-400">Pts</th>
+                  <th className="py-2">Equipo</th><th className="py-2 text-center">PJ</th>
+                  <th className="py-2 text-center">DG</th><th className="py-2 text-right text-emerald-400">Pts</th>
                 </tr>
               </thead>
               <tbody>
-                {getAllThirds().map((row,idx)=>(
+                {getAllThirds().map((row, idx) => (
                   <tr key={row.team} className="border-b border-slate-800/40 bg-teal-950/20">
                     <td className="py-2.5 font-bold">
                       <span className="text-[10px] text-slate-500 mr-2">{idx+1}</span>
@@ -437,7 +656,7 @@ export default function App() {
                       <span className="text-[10px] text-emerald-500 ml-1">({row.group})</span>
                     </td>
                     <td className="py-2.5 text-center text-slate-400">{row.p}</td>
-                    <td className="py-2.5 text-center text-slate-300 font-semibold">{row.gd>0?`+${row.gd}`:row.gd}</td>
+                    <td className="py-2.5 text-center text-slate-300 font-semibold">{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
                     <td className="py-2.5 text-right font-black text-emerald-400 text-sm">{row.pts}</td>
                   </tr>
                 ))}
@@ -446,13 +665,59 @@ export default function App() {
           </div>
         )}
 
+        {/* ══════ ELIMINATORIAS ══════ */}
+        {activeTab === 'knockout' && (
+          <div>
+            {/* Sub-pestañas por fase */}
+            <div className="flex bg-slate-900/40 p-1 rounded-xl mb-4 border border-slate-800 overflow-x-auto gap-0.5">
+              {KNOCKOUT_PHASES.map(phase => (
+                <button key={phase} onClick={() => setKoPhase(phase)}
+                  className={`flex-shrink-0 py-2 px-3 text-center font-bold text-[11px] rounded-lg transition-all whitespace-nowrap ${
+                    koPhase === phase ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-400'
+                  }`}>
+                  {PHASE_NAMES[phase]}
+                </button>
+              ))}
+            </div>
+
+            {/* Título de la fase */}
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="w-4 h-4 text-emerald-400"/>
+              <h2 className="text-sm font-black text-emerald-400 tracking-wider uppercase">
+                {PHASE_NAMES[koPhase]}
+              </h2>
+              <span className="text-[10px] text-slate-500 font-bold ml-auto">
+                {koMatchesForPhase.length} {koMatchesForPhase.length === 1 ? 'partido' : 'partidos'}
+              </span>
+            </div>
+
+            {/* Info de la fase */}
+            {koPhase === 'R32' && (
+              <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-3 mb-4 text-[11px] text-slate-400 leading-relaxed">
+                <p>Los 2 primeros de cada grupo + los 8 mejores terceros avanzan. Los equipos se resuelven automáticamente según tus predicciones de la fase de grupos.</p>
+              </div>
+            )}
+            {koPhase === 'FINAL' && (
+              <div className="bg-yellow-950/30 border border-yellow-500/20 rounded-xl p-3 mb-4 text-[11px] text-yellow-300/80 leading-relaxed text-center font-bold">
+                🏆 LA GRAN FINAL 🏆
+              </div>
+            )}
+
+            {/* Lista de partidos */}
+            <div className="space-y-3.5">
+              {koMatchesForPhase.map(renderKnockoutCard)}
+            </div>
+          </div>
+        )}
+
       </main>
 
-      {/* Nav */}
+      {/* ── NAV ── */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 border-t border-slate-900 p-2 flex justify-around items-center z-50 shadow-2xl backdrop-blur-md">
-        {tabBtn('fixtures', <Calendar className="w-5 h-5"/>, 'Partidos')}
+        {tabBtn('fixtures', <Calendar className="w-5 h-5"/>, 'Grupos')}
         {tabBtn('tables',   <Users    className="w-5 h-5"/>, 'Tablas')}
         {tabBtn('thirds',   <Award    className="w-5 h-5"/>, 'Terceros')}
+        {tabBtn('knockout', <Trophy   className="w-5 h-5"/>, 'Eliminatorias')}
       </nav>
 
     </div>
