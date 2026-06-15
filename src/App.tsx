@@ -294,7 +294,12 @@ function loadLS<T>(key: string, fallback: T): T {
 export default function App() {
   const [activeTab, setActiveTab]         = useState('fixtures');
   const [viewMode,  setViewMode]          = useState('day');
-  const [selectedDate, setSelectedDate]   = useState('11 JUNIO');
+  const [selectedDate, setSelectedDate]   = useState(() => {
+    const MONTH_NAMES_ES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+    const now = new Date();
+    const todayStr = `${now.getDate()} ${MONTH_NAMES_ES[now.getMonth()]}`;
+    return UNIQUE_DATES.includes(todayStr) ? todayStr : '11 JUNIO';
+  });
   const [selectedGroup, setSelectedGroup] = useState('A');
   const [koPhase, setKoPhase]             = useState<KnockoutPhase>('R32');
   const [status, setStatus]               = useState<'connecting'|'connected'|'error'>('connecting');
