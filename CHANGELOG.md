@@ -6,6 +6,10 @@ Registro cronológico de todas las tareas, correcciones e implementaciones reali
 
 ## [20-JUNIO-2026]
 
+### Aumento de Tamaño de Fuente (`style`)
+* **Objetivo:** Se incrementó globalmente el tamaño de las letras (de `text-[10px]` a `text-xs`, y de `text-xs` a `text-sm`, etc.) para mejorar la legibilidad general de la aplicación.
+* **Estado:** Completado, verificado en QA y desplegado en producción.
+
 ### Rediseño de UI, Banderas y Tema Azul (`feat`)
 * **Objetivo:** Se reemplazó el tema oscuro original por un tema claro con tarjetas blancas y fondos gris claro. Se implementó la API de flagcdn para renderizar las banderas reales de los 48 países (ISO 3166-1 alpha-2) en lugar de depender de los emojis nativos que no se veían en todos los sistemas operativos. El color de acento se modificó de verde a azul oscuro a pedido del usuario.
 * **Estado:** Completado, verificado en QA y desplegado en producción.
