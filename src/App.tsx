@@ -390,7 +390,7 @@ export default function App() {
               className="w-8 h-8 rounded-lg bg-white border border-gray-200 active:bg-gray-100 flex items-center justify-center text-gray-500 shadow-sm">
               <Minus className="w-4 h-4"/>
             </button>
-            <span className="text-[10px] font-extrabold text-gray-400">{field === 'home' ? 'L' : 'V'}</span>
+            <span className="text-xs font-extrabold text-gray-400">{field === 'home' ? 'L' : 'V'}</span>
             <button onClick={() => handleScoreChange(matchId, field, 'increment')}
               className="w-8 h-8 rounded-lg bg-blue-500 active:bg-blue-600 flex items-center justify-center text-white font-black shadow-sm">
               <Plus className="w-4 h-4"/>
@@ -423,10 +423,10 @@ export default function App() {
           ) : (
             <div className="h-6 mb-1 flex items-center justify-center text-gray-300 text-xl">🏳️</div>
           )}
-          <span className={`font-black text-xs tracking-tight ${team ? 'text-gray-700' : 'text-gray-400'}`}>
+          <span className={`font-black text-sm tracking-tight ${team ? 'text-gray-700' : 'text-gray-400'}`}>
             {team ? team.code : refLabel(refStr)}
           </span>
-          <span className={`text-[10px] truncate max-w-full ${team ? 'text-gray-500' : 'text-gray-400 italic'}`}>
+          <span className={`text-xs truncate max-w-full ${team ? 'text-gray-500' : 'text-gray-400 italic'}`}>
             {team ? team.name : 'Por definir'}
           </span>
         </div>
@@ -445,7 +445,7 @@ export default function App() {
     return (
       <div key={match.id} className={`bg-white border-2 ${isEdited ? 'border-blue-400 shadow-blue-100 shadow-lg' : 'border-gray-100'} rounded-2xl p-4 shadow-sm transition-all`}>
         {/* Header */}
-        <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase mb-3 pb-2 border-b border-gray-100">
+        <div className="flex justify-between items-center text-xs text-gray-400 font-bold uppercase mb-3 pb-2 border-b border-gray-100">
           <span className={`px-2 py-0.5 rounded-lg font-black ${phaseBadgeColor[match.phase]}`}>
             M{match.num}
           </span>
@@ -459,7 +459,7 @@ export default function App() {
             <span className="text-2xl font-black text-blue-600 min-w-[24px] text-center">
               {score.home !== '' && score.home !== undefined ? score.home : '-'}
             </span>
-            <span className="text-sm font-bold text-gray-300">:</span>
+            <span className="text-base font-bold text-gray-300">:</span>
             <span className="text-2xl font-black text-blue-600 min-w-[24px] text-center">
               {score.away !== '' && score.away !== undefined ? score.away : '-'}
             </span>
@@ -493,16 +493,16 @@ export default function App() {
           </div>
           {hasUnsavedChanges && (
             <div className="flex gap-1.5 items-center">
-              <button onClick={handleDiscard} className="text-rose-500 font-bold text-[10px] px-2 py-1.5 uppercase hover:bg-rose-50 rounded-lg transition-colors">
+              <button onClick={handleDiscard} className="text-rose-500 font-bold text-xs px-2 py-1.5 uppercase hover:bg-rose-50 rounded-lg transition-colors">
                 Descartar
               </button>
-              <button onClick={handleSave} className="bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-black text-[10px] uppercase px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-md transition-all">
+              <button onClick={handleSave} className="bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-black text-xs uppercase px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-md transition-all">
                 <Save className="w-3.5 h-3.5"/> Guardar
               </button>
             </div>
           )}
         </div>
-        <div className="mt-3 flex items-center justify-between text-[10px] bg-gray-50 rounded-xl px-3 py-1.5 border border-gray-100">
+        <div className="mt-3 flex items-center justify-between text-xs bg-gray-50 rounded-xl px-3 py-1.5 border border-gray-100">
           <span className="text-gray-400 font-medium">Estado Nube Global:</span>
           <span className={`font-bold flex items-center gap-1 transition-colors ${status==='connected'?'text-blue-500':status==='connecting'?'text-blue-400':'text-rose-500'}`}>
             {status === 'connected' ? <><CloudLightning className="w-3.5 h-3.5"/>Conectado (En vivo)</> :
@@ -521,7 +521,7 @@ export default function App() {
             <div className="flex bg-white p-1 rounded-xl mb-4 border border-gray-100 shadow-sm">
               {(['day','group','favs'] as const).map((m,i) => (
                 <button key={m} onClick={() => setViewMode(m)}
-                  className={`flex-1 py-2 text-center font-bold text-xs rounded-lg transition-all ${viewMode===m?'bg-blue-500 text-white shadow-md':'text-gray-400'}`}>
+                  className={`flex-1 py-2 text-center font-bold text-sm rounded-lg transition-all ${viewMode===m?'bg-blue-500 text-white shadow-md':'text-gray-400'}`}>
                   {['Por Día','Por Grupo','Favoritos ⭐'][i]}
                 </button>
               ))}
@@ -533,7 +533,7 @@ export default function App() {
                   className="p-1.5 text-blue-500 active:scale-95 transition-transform rounded-lg hover:bg-blue-50">
                   <ChevronLeft className="w-5 h-5"/>
                 </button>
-                <div className="flex-1 text-center font-black text-sm text-blue-600 tracking-wider">{selectedDate}</div>
+                <div className="flex-1 text-center font-black text-base text-blue-600 tracking-wider">{selectedDate}</div>
                 <button onClick={() => { const i = UNIQUE_DATES.indexOf(selectedDate); if (i < UNIQUE_DATES.length-1) setSelectedDate(UNIQUE_DATES[i+1]); }}
                   className="p-1.5 text-blue-500 active:scale-95 transition-transform rounded-lg hover:bg-blue-50">
                   <ChevronRight className="w-5 h-5"/>
@@ -545,7 +545,7 @@ export default function App() {
               <div className="grid grid-cols-6 gap-1.5 mb-4">
                 {Object.keys(INITIAL_GROUPS).map(g => (
                   <button key={g} onClick={() => setSelectedGroup(g)}
-                    className={`py-1.5 font-bold text-xs rounded-xl border-2 transition-all ${selectedGroup===g?'bg-blue-500 text-white border-blue-400 shadow-md scale-105':'bg-white text-gray-500 border-gray-100 shadow-sm'}`}>
+                    className={`py-1.5 font-bold text-sm rounded-xl border-2 transition-all ${selectedGroup===g?'bg-blue-500 text-white border-blue-400 shadow-md scale-105':'bg-white text-gray-500 border-gray-100 shadow-sm'}`}>
                     {g}
                   </button>
                 ))}
@@ -553,7 +553,7 @@ export default function App() {
             )}
 
             {viewMode === 'favs' && filteredMatches.length === 0 && (
-              <div className="text-center py-10 px-4 text-gray-400 text-xs bg-white rounded-2xl border-2 border-dashed border-gray-200 shadow-sm">
+              <div className="text-center py-10 px-4 text-gray-400 text-sm bg-white rounded-2xl border-2 border-dashed border-gray-200 shadow-sm">
                 <Star className="w-8 h-8 text-gray-200 mx-auto mb-2"/>
                 <p>No hay favoritos aún.</p>
                 <p className="mt-1 text-[11px] text-gray-400">Tocá la ⭐ de cualquier equipo para seguirlo acá.</p>
@@ -572,7 +572,7 @@ export default function App() {
                 return (
                   <div key={match.id} className={`bg-white border-2 ${isEdited ? 'border-blue-400 shadow-blue-100 shadow-lg' : 'border-gray-100'} rounded-2xl p-4 shadow-sm transition-all`}>
                     {/* Header del partido */}
-                    <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase mb-3 pb-2 border-b border-gray-100">
+                    <div className="flex justify-between items-center text-xs text-gray-400 font-bold uppercase mb-3 pb-2 border-b border-gray-100">
                       <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg font-black">Grupo {match.group}</span>
                       <span>{match.date} · {match.time} ARG</span>
                       <span className="text-gray-400 truncate max-w-[90px] text-right">{match.venue}</span>
@@ -585,15 +585,15 @@ export default function App() {
                           <Star className={`w-4 h-4 ${favorites.includes(match.home)?'fill-amber-400 text-amber-400':'text-gray-200'}`}/>
                         </button>
                         {homeFlag ? <img src={`https://flagcdn.com/w40/${homeFlag}.png`} alt={match.home} className="h-6 mb-1 rounded-sm shadow-sm object-contain" /> : <div className="h-6 mb-1 text-xl">🏳️</div>}
-                        <span className="font-black text-xs text-gray-700">{match.home}</span>
-                        <span className="text-[10px] text-gray-400 truncate max-w-full">{homeName}</span>
+                        <span className="font-black text-sm text-gray-700">{match.home}</span>
+                        <span className="text-xs text-gray-400 truncate max-w-full">{homeName}</span>
                       </div>
                       {/* Marcador */}
                       <div className="col-span-4 bg-gray-50 border-2 border-blue-100 rounded-xl py-2 px-2 flex justify-center items-center gap-2">
                         <span className="text-2xl font-black text-blue-600 min-w-[24px] text-center">
                           {score.home !== '' && score.home !== undefined ? score.home : '-'}
                         </span>
-                        <span className="text-sm font-bold text-gray-300">:</span>
+                        <span className="text-base font-bold text-gray-300">:</span>
                         <span className="text-2xl font-black text-blue-600 min-w-[24px] text-center">
                           {score.away !== '' && score.away !== undefined ? score.away : '-'}
                         </span>
@@ -604,8 +604,8 @@ export default function App() {
                           <Star className={`w-4 h-4 ${favorites.includes(match.away)?'fill-amber-400 text-amber-400':'text-gray-200'}`}/>
                         </button>
                         {awayFlag ? <img src={`https://flagcdn.com/w40/${awayFlag}.png`} alt={match.away} className="h-6 mb-1 rounded-sm shadow-sm object-contain" /> : <div className="h-6 mb-1 text-xl">🏳️</div>}
-                        <span className="font-black text-xs text-gray-700">{match.away}</span>
-                        <span className="text-[10px] text-gray-400 truncate max-w-full">{awayName}</span>
+                        <span className="font-black text-sm text-gray-700">{match.away}</span>
+                        <span className="text-xs text-gray-400 truncate max-w-full">{awayName}</span>
                       </div>
                     </div>
                     {renderScoreControls(match.id)}
@@ -620,7 +620,7 @@ export default function App() {
         {activeTab === 'tables' && (
           <div className="space-y-4">
             <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
-              <h2 className="text-sm font-black text-gray-800 tracking-wider mb-3 flex items-center gap-2">
+              <h2 className="text-base font-black text-gray-800 tracking-wider mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-500"/> POSICIONES — GRUPO {selectedGroup}
               </h2>
               <div className="grid grid-cols-6 gap-1.5 mb-4">
@@ -631,9 +631,9 @@ export default function App() {
                   </button>
                 ))}
               </div>
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="text-gray-400 border-b border-gray-100 font-bold uppercase text-[10px]">
+                  <tr className="text-gray-400 border-b border-gray-100 font-bold uppercase text-xs">
                     <th className="py-2">Equipo</th><th className="py-2 text-center">PJ</th>
                     <th className="py-2 text-center">GF</th><th className="py-2 text-center">DG</th>
                     <th className="py-2 text-right text-blue-600">Pts</th>
@@ -643,14 +643,14 @@ export default function App() {
                   {calculateGroupTable(selectedGroup as GroupId).map((row, idx) => (
                     <tr key={row.team} className={`border-b border-gray-100 ${idx < 2 ? 'bg-blue-50/60' : ''}`}>
                       <td className="py-2.5 font-bold flex items-center gap-2">
-                        <span className="text-[10px] text-gray-400 w-3">{idx+1}</span>
+                        <span className="text-xs text-gray-400 w-3">{idx+1}</span>
                         {FLAGS[row.team] ? <img src={`https://flagcdn.com/w20/${FLAGS[row.team]}.png`} alt={row.team} className="w-5 rounded-[2px] shadow-sm object-contain" /> : <span className="text-lg leading-none">🏳️</span>}
                         <span className="text-gray-700">{row.name}</span>
                       </td>
                       <td className="py-2.5 text-center text-gray-500">{row.p}</td>
                       <td className="py-2.5 text-center text-gray-500">{row.gf}</td>
                       <td className="py-2.5 text-center font-semibold text-gray-600">{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
-                      <td className="py-2.5 text-right font-black text-blue-600 text-sm">{row.pts}</td>
+                      <td className="py-2.5 text-right font-black text-blue-600 text-base">{row.pts}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -662,15 +662,15 @@ export default function App() {
         {/* ══════ TERCEROS ══════ */}
         {activeTab === 'thirds' && (
           <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
-            <h2 className="text-sm font-black text-gray-800 tracking-wider mb-2 flex items-center gap-2">
+            <h2 className="text-base font-black text-gray-800 tracking-wider mb-2 flex items-center gap-2">
               <Award className="w-4 h-4 text-blue-500"/> MEJORES TERCEROS
             </h2>
             <p className="text-[11px] text-gray-400 mb-4 leading-relaxed">
               Los 8 mejores terceros de los 12 grupos clasifican a Dieciséisavos.
             </p>
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-gray-400 border-b border-gray-100 font-bold uppercase text-[10px]">
+                <tr className="text-gray-400 border-b border-gray-100 font-bold uppercase text-xs">
                   <th className="py-2">Equipo</th><th className="py-2 text-center">PJ</th>
                   <th className="py-2 text-center">DG</th><th className="py-2 text-right text-blue-600">Pts</th>
                 </tr>
@@ -679,14 +679,14 @@ export default function App() {
                 {getAllThirds().map((row, idx) => (
                   <tr key={row.team} className="border-b border-gray-100">
                     <td className="py-2.5 font-bold flex items-center gap-2">
-                      <span className="text-[10px] text-gray-400 w-3">{idx+1}</span>
+                      <span className="text-xs text-gray-400 w-3">{idx+1}</span>
                       {FLAGS[row.team] ? <img src={`https://flagcdn.com/w20/${FLAGS[row.team]}.png`} alt={row.team} className="w-5 rounded-[2px] shadow-sm object-contain" /> : <span className="text-lg leading-none">🏳️</span>}
                       <span className="text-gray-700">{row.name}</span>
-                      <span className="text-[10px] text-blue-500 ml-0.5">({row.group})</span>
+                      <span className="text-xs text-blue-500 ml-0.5">({row.group})</span>
                     </td>
                     <td className="py-2.5 text-center text-gray-500">{row.p}</td>
                     <td className="py-2.5 text-center text-gray-600 font-semibold">{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
-                    <td className="py-2.5 text-right font-black text-blue-600 text-sm">{row.pts}</td>
+                    <td className="py-2.5 text-right font-black text-blue-600 text-base">{row.pts}</td>
                   </tr>
                 ))}
               </tbody>
@@ -714,10 +714,10 @@ export default function App() {
               <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Trophy className="w-4 h-4 text-blue-600"/>
               </div>
-              <h2 className="text-sm font-black text-gray-800 tracking-wider uppercase">
+              <h2 className="text-base font-black text-gray-800 tracking-wider uppercase">
                 {PHASE_NAMES[koPhase]}
               </h2>
-              <span className="text-[10px] text-gray-400 font-bold ml-auto">
+              <span className="text-xs text-gray-400 font-bold ml-auto">
                 {koMatchesForPhase.length} {koMatchesForPhase.length === 1 ? 'partido' : 'partidos'}
               </span>
             </div>
