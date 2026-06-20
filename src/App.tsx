@@ -4,6 +4,25 @@ import { ref, onValue, update } from 'firebase/database';
 import { database } from './firebase';
 
 // ═══════════════════════════════════════════
+//  BANDERAS POR CÓDIGO
+// ═══════════════════════════════════════════
+
+const FLAGS: Record<string, string> = {
+  MEX: 'mx', SUD: 'za', COR: 'kr', RCH: 'cz',
+  CAN: 'ca', QAT: 'qa', SUI: 'ch', BYH: 'ba',
+  BRA: 'br', MAR: 'ma', HAI: 'ht', ESC: 'gb-sct',
+  USA: 'us', PAR: 'py', AUS: 'au', TUR: 'tr',
+  ALE: 'de', CUR: 'cw', CMA: 'ci', ECU: 'ec',
+  PBA: 'nl', JAP: 'jp', SUE: 'se', TUN: 'tn',
+  BEL: 'be', EGI: 'eg', IRA: 'ir', NZE: 'nz',
+  ESP: 'es', CAB: 'cv', ARA: 'sa', URU: 'uy',
+  FRA: 'fr', SEN: 'sn', IRK: 'iq', NOR: 'no',
+  ARG: 'ar', AGL: 'dz', AUT: 'at', JOR: 'jo',
+  POR: 'pt', RDC: 'cd', UZB: 'uz', COL: 'co',
+  ING: 'gb-eng', CRO: 'hr', GHA: 'gh', PAN: 'pa',
+};
+
+// ═══════════════════════════════════════════
 //  DATOS FASE DE GRUPOS
 // ═══════════════════════════════════════════
 
@@ -114,7 +133,6 @@ const PHASE_NAMES: Record<KnockoutPhase, string> = {
 
 const KNOCKOUT_PHASES: KnockoutPhase[] = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
 
-// homeRef/awayRef formats: '1A'=1° grupo A, '2B'=2° grupo B, '3_ABCDF'=mejor 3° de esos grupos, 'W73'=ganador M73, 'L101'=perdedor M101
 interface KOMatch {
   id: string; num: number; phase: KnockoutPhase;
   date: string; time: string; venue: string;
@@ -169,7 +187,6 @@ const KNOCKOUT_MATCHES: KOMatch[] = [
 interface TeamRow { team: string; name: string; p: number; w: number; d: number; l: number; gf: number; ga: number; gd: number; pts: number; }
 interface ResolvedTeam { code: string; name: string; }
 
-/** Calcula tabla de posiciones de un grupo */
 function calcGroupTable(gId: GroupId, scores: Record<string, any>): TeamRow[] {
   const group = INITIAL_GROUPS[gId];
   const table: Record<string, any> = {};
@@ -190,9 +207,6 @@ function calcGroupTable(gId: GroupId, scores: Record<string, any>): TeamRow[] {
   return Object.values(table).map((t: any) => ({ ...t, gd: t.gf - t.ga })).sort((a: any, b: any) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
 }
 
-
-
-/** Formato legible de una referencia (para mostrar cuando no se resolvió) */
 function refLabel(r: string): string {
   if (r.startsWith('3_')) return `3° ${r.substring(2).split('').join('/')}`;
   if (r.startsWith('W')) return `G${r.substring(1)}`;
@@ -202,28 +216,20 @@ function refLabel(r: string): string {
 
 type KOResolution = Record<string, { home: ResolvedTeam | null; away: ResolvedTeam | null }>;
 
-/** Resuelve todos los equipos de la fase eliminatoria basándose en los scores cargados */
 function resolveAllKnockout(scores: Record<string, any>): KOResolution {
   const result: KOResolution = {};
-
-  // Pre-calcular tablas de todos los grupos
   const groupTables: Record<string, TeamRow[]> = {};
   (Object.keys(INITIAL_GROUPS) as GroupId[]).forEach(gId => {
     groupTables[gId] = calcGroupTable(gId, scores);
   });
-
-  // Obtener equipo por posición en grupo: '1A' → 1° de grupo A (idx 0), '2B' → 2° de B (idx 1)
   const getGroupTeam = (ref: string): ResolvedTeam | null => {
-    const pos = parseInt(ref[0]) - 1; // 0-indexed
+    const pos = parseInt(ref[0]) - 1;
     const gId = ref.substring(1) as GroupId;
     const table = groupTables[gId];
     if (!table || !table[pos]) return null;
-    // Verificar que al menos 1 partido se jugó
     if (table[pos].p === 0) return null;
     return { code: table[pos].team, name: table[pos].name };
   };
-
-  // Calcular los 8 mejores terceros
   const allThirds: (TeamRow & { group: string })[] = [];
   (Object.keys(INITIAL_GROUPS) as GroupId[]).forEach(gId => {
     const t = groupTables[gId];
@@ -232,8 +238,6 @@ function resolveAllKnockout(scores: Record<string, any>): KOResolution {
   allThirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
   const qualifyingThirds = allThirds.slice(0, 8);
   const qualifyingGroupSet = new Set(qualifyingThirds.map(t => t.group));
-
-  // Asignar terceros a partidos R32 (greedy por orden de partido)
   const thirdAllocation: Record<string, ResolvedTeam> = {};
   const assignedGroups = new Set<string>();
   const thirdMatches = KNOCKOUT_MATCHES.filter(m => m.phase === 'R32' && m.awayRef.startsWith('3_')).sort((a, b) => a.num - b.num);
@@ -247,18 +251,14 @@ function resolveAllKnockout(scores: Record<string, any>): KOResolution {
       assignedGroups.add(available[0].group);
     }
   }
-
-  // Helper: obtener ganador/perdedor de un partido KO ya resuelto
   const getWinnerOrLoser = (matchId: string, wantWinner: boolean): ResolvedTeam | null => {
     const score = scores[matchId];
     if (!score || score.home === '' || score.away === '' || score.home === undefined || score.away === undefined) return null;
     const h = +score.home, a = +score.away;
-    if (h === a) return null; // Empate: no se puede determinar
+    if (h === a) return null;
     const side = (h > a) === wantWinner ? 'home' : 'away';
     return result[matchId]?.[side] || null;
   };
-
-  // Resolver por fases en orden
   const phaseOrder: KnockoutPhase[] = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
   for (const phase of phaseOrder) {
     const matches = KNOCKOUT_MATCHES.filter(m => m.phase === phase);
@@ -269,10 +269,7 @@ function resolveAllKnockout(scores: Record<string, any>): KOResolution {
         if (r.startsWith('3_')) return thirdAllocation[match.id] || null;
         return getGroupTeam(r);
       };
-      result[match.id] = {
-        home: resolveRef(match.homeRef),
-        away: resolveRef(match.awayRef),
-      };
+      result[match.id] = { home: resolveRef(match.homeRef), away: resolveRef(match.awayRef) };
     }
   }
   return result;
@@ -327,24 +324,13 @@ export default function App() {
   const handleScoreChange = (id: string, field: 'home'|'away', action: 'increment' | 'decrement') => {
     const existing = currentScores[id] || { home: '', away: '' };
     const currentVal = existing[field];
-    
     let newVal: number | string = '';
     if (action === 'increment') {
-      if (currentVal === '' || currentVal === undefined) {
-        newVal = 0;
-      } else {
-        newVal = +currentVal + 1;
-      }
+      newVal = (currentVal === '' || currentVal === undefined) ? 0 : +currentVal + 1;
     } else if (action === 'decrement') {
-      if (currentVal === '' || currentVal === undefined) {
-        newVal = '';
-      } else if (+currentVal === 0) {
-        newVal = '';
-      } else {
-        newVal = +currentVal - 1;
-      }
+      if (currentVal === '' || currentVal === undefined || +currentVal === 0) { newVal = ''; }
+      else { newVal = +currentVal - 1; }
     }
-    
     setUnsavedChanges(prev => ({ ...prev, [id]: { ...existing, [field]: newVal } }));
   };
 
@@ -389,24 +375,24 @@ export default function App() {
 
   const tabBtn = (id: string, icon: React.ReactNode, label: string) => (
     <button onClick={() => setActiveTab(id)}
-      className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition-all ${activeTab === id ? 'text-emerald-400 bg-slate-900' : 'text-slate-500'}`}>
+      className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${activeTab === id ? 'text-blue-600 bg-blue-50' : 'text-gray-400'}`}>
       {icon}<span className="text-[9px] font-black uppercase tracking-wider">{label}</span>
     </button>
   );
 
-  // ── Score card reutilizable ──
+  // ── Score controls reutilizables ──
   const renderScoreControls = (matchId: string) => {
     return (
-      <div className="grid grid-cols-2 gap-4 mt-3 pt-2.5 border-t border-slate-800/40">
+      <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100">
         {(['home', 'away'] as const).map(field => (
-          <div key={field} className="flex justify-between items-center bg-slate-950/60 py-1 px-1.5 rounded-xl border border-slate-800/80">
+          <div key={field} className="flex justify-between items-center bg-gray-50 py-1 px-1.5 rounded-xl border border-gray-200">
             <button onClick={() => handleScoreChange(matchId, field, 'decrement')}
-              className="w-8 h-8 rounded-lg bg-slate-800 active:bg-slate-700 flex items-center justify-center text-slate-300">
+              className="w-8 h-8 rounded-lg bg-white border border-gray-200 active:bg-gray-100 flex items-center justify-center text-gray-500 shadow-sm">
               <Minus className="w-4 h-4"/>
             </button>
-            <span className="text-[10px] font-extrabold text-slate-500">{field === 'home' ? 'L' : 'V'}</span>
+            <span className="text-[10px] font-extrabold text-gray-400">{field === 'home' ? 'L' : 'V'}</span>
             <button onClick={() => handleScoreChange(matchId, field, 'increment')}
-              className="w-8 h-8 rounded-lg bg-emerald-600 active:bg-emerald-500 flex items-center justify-center text-slate-950 font-black">
+              className="w-8 h-8 rounded-lg bg-blue-500 active:bg-blue-600 flex items-center justify-center text-white font-black shadow-sm">
               <Plus className="w-4 h-4"/>
             </button>
           </div>
@@ -423,53 +409,58 @@ export default function App() {
 
     const renderTeamSlot = (team: ResolvedTeam | null, refStr: string, side: 'home' | 'away') => {
       const isFav = team ? favorites.includes(team.code) : false;
+      const flag = team ? FLAGS[team.code] : null;
       return (
         <div className="col-span-4 flex flex-col items-center text-center relative">
           {team && (
             <button onClick={() => toggleFavorite(team.code)}
               className={`absolute -top-3 ${side === 'home' ? 'left-1' : 'right-1'} p-1 z-10`}>
-              <Star className={`w-4 h-4 ${isFav ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}`}/>
+              <Star className={`w-4 h-4 ${isFav ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}/>
             </button>
           )}
-          <span className={`font-black text-sm tracking-tight ${team ? 'text-slate-200' : 'text-slate-500'}`}>
+          {flag ? (
+            <img src={`https://flagcdn.com/w40/${flag}.png`} alt={team.code} className="h-6 mb-1 rounded-sm shadow-sm object-contain" />
+          ) : (
+            <div className="h-6 mb-1 flex items-center justify-center text-gray-300 text-xl">🏳️</div>
+          )}
+          <span className={`font-black text-xs tracking-tight ${team ? 'text-gray-700' : 'text-gray-400'}`}>
             {team ? team.code : refLabel(refStr)}
           </span>
-          <span className={`text-[11px] truncate max-w-full ${team ? 'text-slate-400' : 'text-slate-600 italic'}`}>
+          <span className={`text-[10px] truncate max-w-full ${team ? 'text-gray-500' : 'text-gray-400 italic'}`}>
             {team ? team.name : 'Por definir'}
           </span>
         </div>
       );
     };
 
-    // Badge de fase con color según ronda
     const phaseBadgeColor: Record<KnockoutPhase, string> = {
-      R32: 'text-sky-400 bg-sky-950/60',
-      R16: 'text-violet-400 bg-violet-950/60',
-      QF:  'text-amber-400 bg-amber-950/60',
-      SF:  'text-rose-400 bg-rose-950/60',
-      '3RD': 'text-orange-400 bg-orange-950/60',
-      FINAL: 'text-yellow-300 bg-yellow-950/60',
+      R32: 'text-sky-600 bg-sky-50',
+      R16: 'text-violet-600 bg-violet-50',
+      QF:  'text-amber-600 bg-amber-50',
+      SF:  'text-rose-600 bg-rose-50',
+      '3RD': 'text-orange-600 bg-orange-50',
+      FINAL: 'text-yellow-700 bg-yellow-50',
     };
 
     return (
-      <div key={match.id} className={`bg-slate-900/80 border ${isEdited ? 'border-emerald-500/50 shadow-emerald-900/20' : 'border-slate-800/80'} rounded-2xl p-4 shadow-xl transition-colors`}>
+      <div key={match.id} className={`bg-white border-2 ${isEdited ? 'border-blue-400 shadow-blue-100 shadow-lg' : 'border-gray-100'} rounded-2xl p-4 shadow-sm transition-all`}>
         {/* Header */}
-        <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase mb-3 pb-2 border-b border-slate-800/60">
-          <span className={`px-2 py-0.5 rounded font-black ${phaseBadgeColor[match.phase]}`}>
+        <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase mb-3 pb-2 border-b border-gray-100">
+          <span className={`px-2 py-0.5 rounded-lg font-black ${phaseBadgeColor[match.phase]}`}>
             M{match.num}
           </span>
-          <span>{match.date} · {match.time} ARG</span>
-          <span className="text-slate-500 truncate max-w-[110px] text-right">{match.venue}</span>
+          <span className="text-gray-500">{match.date} · {match.time} ARG</span>
+          <span className="text-gray-400 truncate max-w-[100px] text-right">{match.venue}</span>
         </div>
         {/* Scoreboard */}
         <div className="grid grid-cols-12 items-center gap-1.5 my-2.5">
           {renderTeamSlot(resolved.home, match.homeRef, 'home')}
-          <div className="col-span-4 bg-slate-950 border border-emerald-500/20 rounded-xl py-1.5 px-2 flex justify-center items-center gap-2.5">
-            <span className="text-2xl font-black text-emerald-400 min-w-[24px] text-center">
+          <div className="col-span-4 bg-gray-50 border-2 border-blue-100 rounded-xl py-2 px-2 flex justify-center items-center gap-2">
+            <span className="text-2xl font-black text-blue-600 min-w-[24px] text-center">
               {score.home !== '' && score.home !== undefined ? score.home : '-'}
             </span>
-            <span className="text-xs font-bold text-slate-700">:</span>
-            <span className="text-2xl font-black text-emerald-400 min-w-[24px] text-center">
+            <span className="text-sm font-bold text-gray-300">:</span>
+            <span className="text-2xl font-black text-blue-600 min-w-[24px] text-center">
               {score.away !== '' && score.away !== undefined ? score.away : '-'}
             </span>
           </div>
@@ -486,29 +477,34 @@ export default function App() {
   // ═══════════════════════════════════════
 
   return (
-    <div className="max-w-md mx-auto bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-28 shadow-2xl relative select-none">
+    <div className="max-w-md mx-auto bg-gray-50 text-gray-800 min-h-screen flex flex-col font-sans pb-28 shadow-2xl relative select-none">
 
       {/* ── HEADER ── */}
-      <header className="bg-gradient-to-r from-emerald-950 via-slate-950 to-slate-950 p-4 sticky top-0 z-40 border-b border-emerald-500/20 shadow-xl">
+      <header className="bg-white p-4 sticky top-0 z-40 border-b border-gray-100 shadow-sm">
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-extrabold tracking-wider text-emerald-400">MUNDIAL 2026</h1>
-            <p className="text-[11px] text-slate-400 font-medium">By Capol!</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-500 flex items-center justify-center shadow-md">
+              <Trophy className="w-5 h-5 text-white"/>
+            </div>
+            <div>
+              <h1 className="text-lg font-extrabold tracking-tight text-gray-800">MUNDIAL 2026</h1>
+              <p className="text-[11px] text-gray-400 font-medium">By Capol!</p>
+            </div>
           </div>
           {hasUnsavedChanges && (
             <div className="flex gap-1.5 items-center">
-              <button onClick={handleDiscard} className="text-rose-400 font-bold text-[10px] px-2 py-1.5 uppercase hover:bg-rose-500/10 rounded-md transition-colors">
+              <button onClick={handleDiscard} className="text-rose-500 font-bold text-[10px] px-2 py-1.5 uppercase hover:bg-rose-50 rounded-lg transition-colors">
                 Descartar
               </button>
-              <button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-950 font-black text-[10px] uppercase px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-lg shadow-emerald-900/50 transition-all">
+              <button onClick={handleSave} className="bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-black text-[10px] uppercase px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-md transition-all">
                 <Save className="w-3.5 h-3.5"/> Guardar
               </button>
             </div>
           )}
         </div>
-        <div className="mt-2 flex items-center justify-between text-[10px] bg-slate-900/60 rounded-md px-2.5 py-1 border border-slate-800/80">
-          <span className="text-slate-400 font-medium">Estado Nube Global:</span>
-          <span className={`font-bold flex items-center gap-1 transition-colors ${status==='connected'?'text-emerald-400':status==='connecting'?'text-blue-400':'text-rose-500'}`}>
+        <div className="mt-3 flex items-center justify-between text-[10px] bg-gray-50 rounded-xl px-3 py-1.5 border border-gray-100">
+          <span className="text-gray-400 font-medium">Estado Nube Global:</span>
+          <span className={`font-bold flex items-center gap-1 transition-colors ${status==='connected'?'text-blue-500':status==='connecting'?'text-blue-400':'text-rose-500'}`}>
             {status === 'connected' ? <><CloudLightning className="w-3.5 h-3.5"/>Conectado (En vivo)</> :
              status === 'connecting' ? <><RefreshCw className="w-3 h-3 animate-spin"/>Conectando...</> :
              'Error de conexión'}
@@ -522,24 +518,24 @@ export default function App() {
         {/* ══════ FIXTURES (Fase de Grupos) ══════ */}
         {activeTab === 'fixtures' && (
           <div>
-            <div className="flex bg-slate-900/40 p-1 rounded-xl mb-4 border border-slate-800">
+            <div className="flex bg-white p-1 rounded-xl mb-4 border border-gray-100 shadow-sm">
               {(['day','group','favs'] as const).map((m,i) => (
                 <button key={m} onClick={() => setViewMode(m)}
-                  className={`flex-1 py-2 text-center font-bold text-xs rounded-lg transition-all ${viewMode===m?'bg-emerald-500 text-slate-950 shadow':'text-slate-400'}`}>
+                  className={`flex-1 py-2 text-center font-bold text-xs rounded-lg transition-all ${viewMode===m?'bg-blue-500 text-white shadow-md':'text-gray-400'}`}>
                   {['Por Día','Por Grupo','Favoritos ⭐'][i]}
                 </button>
               ))}
             </div>
 
             {viewMode === 'day' && (
-              <div className="flex items-center gap-1 mb-4 bg-slate-900 p-2 rounded-xl border border-slate-800">
+              <div className="flex items-center gap-1 mb-4 bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
                 <button onClick={() => { const i = UNIQUE_DATES.indexOf(selectedDate); if (i > 0) setSelectedDate(UNIQUE_DATES[i-1]); }}
-                  className="p-1.5 text-emerald-400 active:scale-95 transition-transform">
+                  className="p-1.5 text-blue-500 active:scale-95 transition-transform rounded-lg hover:bg-blue-50">
                   <ChevronLeft className="w-5 h-5"/>
                 </button>
-                <div className="flex-1 text-center font-black text-sm text-emerald-400 tracking-wider">{selectedDate}</div>
+                <div className="flex-1 text-center font-black text-sm text-blue-600 tracking-wider">{selectedDate}</div>
                 <button onClick={() => { const i = UNIQUE_DATES.indexOf(selectedDate); if (i < UNIQUE_DATES.length-1) setSelectedDate(UNIQUE_DATES[i+1]); }}
-                  className="p-1.5 text-emerald-400 active:scale-95 transition-transform">
+                  className="p-1.5 text-blue-500 active:scale-95 transition-transform rounded-lg hover:bg-blue-50">
                   <ChevronRight className="w-5 h-5"/>
                 </button>
               </div>
@@ -549,7 +545,7 @@ export default function App() {
               <div className="grid grid-cols-6 gap-1.5 mb-4">
                 {Object.keys(INITIAL_GROUPS).map(g => (
                   <button key={g} onClick={() => setSelectedGroup(g)}
-                    className={`py-1.5 font-bold text-xs rounded-md border transition-all ${selectedGroup===g?'bg-emerald-500 text-slate-950 border-emerald-400 scale-105':'bg-slate-900 text-slate-400 border-slate-800'}`}>
+                    className={`py-1.5 font-bold text-xs rounded-xl border-2 transition-all ${selectedGroup===g?'bg-blue-500 text-white border-blue-400 shadow-md scale-105':'bg-white text-gray-500 border-gray-100 shadow-sm'}`}>
                     {g}
                   </button>
                 ))}
@@ -557,50 +553,59 @@ export default function App() {
             )}
 
             {viewMode === 'favs' && filteredMatches.length === 0 && (
-              <div className="text-center py-10 px-4 text-slate-500 text-xs bg-slate-900/20 rounded-xl border border-dashed border-slate-800">
-                <Star className="w-8 h-8 text-slate-700 mx-auto mb-2"/>
+              <div className="text-center py-10 px-4 text-gray-400 text-xs bg-white rounded-2xl border-2 border-dashed border-gray-200 shadow-sm">
+                <Star className="w-8 h-8 text-gray-200 mx-auto mb-2"/>
                 <p>No hay favoritos aún.</p>
-                <p className="mt-1 text-[11px] text-slate-600">Tocá la ⭐ de cualquier equipo para seguirlo acá.</p>
+                <p className="mt-1 text-[11px] text-gray-400">Tocá la ⭐ de cualquier equipo para seguirlo acá.</p>
               </div>
             )}
 
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               {filteredMatches.map(match => {
                 const group = INITIAL_GROUPS[match.group as GroupId];
                 const homeName = (group.teamNames as any)[match.home];
                 const awayName = (group.teamNames as any)[match.away];
                 const score = currentScores[match.id] || {home:'',away:''};
                 const isEdited = unsavedChanges.hasOwnProperty(match.id);
+                const homeFlag = FLAGS[match.home];
+                const awayFlag = FLAGS[match.away];
                 return (
-                  <div key={match.id} className={`bg-slate-900/80 border ${isEdited ? 'border-emerald-500/50 shadow-emerald-900/20' : 'border-slate-800/80'} rounded-2xl p-4 shadow-xl transition-colors`}>
-                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase mb-3 pb-2 border-b border-slate-800/60">
-                      <span className="bg-slate-800/80 px-2 py-0.5 rounded text-emerald-400">Grupo {match.group}</span>
+                  <div key={match.id} className={`bg-white border-2 ${isEdited ? 'border-blue-400 shadow-blue-100 shadow-lg' : 'border-gray-100'} rounded-2xl p-4 shadow-sm transition-all`}>
+                    {/* Header del partido */}
+                    <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase mb-3 pb-2 border-b border-gray-100">
+                      <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg font-black">Grupo {match.group}</span>
                       <span>{match.date} · {match.time} ARG</span>
-                      <span className="text-slate-500 truncate max-w-[110px] text-right">{match.venue}</span>
+                      <span className="text-gray-400 truncate max-w-[90px] text-right">{match.venue}</span>
                     </div>
+                    {/* Equipos + Score */}
                     <div className="grid grid-cols-12 items-center gap-1.5 my-2.5">
+                      {/* Local */}
                       <div className="col-span-4 flex flex-col items-center text-center relative">
                         <button onClick={() => toggleFavorite(match.home)} className="absolute -top-3 left-1 p-1 z-10">
-                          <Star className={`w-4 h-4 ${favorites.includes(match.home)?'fill-amber-400 text-amber-400':'text-slate-700'}`}/>
+                          <Star className={`w-4 h-4 ${favorites.includes(match.home)?'fill-amber-400 text-amber-400':'text-gray-200'}`}/>
                         </button>
-                        <span className="font-black text-sm text-slate-200">{match.home}</span>
-                        <span className="text-[11px] text-slate-400 truncate max-w-full">{homeName}</span>
+                        {homeFlag ? <img src={`https://flagcdn.com/w40/${homeFlag}.png`} alt={match.home} className="h-6 mb-1 rounded-sm shadow-sm object-contain" /> : <div className="h-6 mb-1 text-xl">🏳️</div>}
+                        <span className="font-black text-xs text-gray-700">{match.home}</span>
+                        <span className="text-[10px] text-gray-400 truncate max-w-full">{homeName}</span>
                       </div>
-                      <div className="col-span-4 bg-slate-950 border border-emerald-500/20 rounded-xl py-1.5 px-2 flex justify-center items-center gap-2.5">
-                        <span className="text-2xl font-black text-emerald-400 min-w-[24px] text-center">
+                      {/* Marcador */}
+                      <div className="col-span-4 bg-gray-50 border-2 border-blue-100 rounded-xl py-2 px-2 flex justify-center items-center gap-2">
+                        <span className="text-2xl font-black text-blue-600 min-w-[24px] text-center">
                           {score.home !== '' && score.home !== undefined ? score.home : '-'}
                         </span>
-                        <span className="text-xs font-bold text-slate-700">:</span>
-                        <span className="text-2xl font-black text-emerald-400 min-w-[24px] text-center">
+                        <span className="text-sm font-bold text-gray-300">:</span>
+                        <span className="text-2xl font-black text-blue-600 min-w-[24px] text-center">
                           {score.away !== '' && score.away !== undefined ? score.away : '-'}
                         </span>
                       </div>
+                      {/* Visitante */}
                       <div className="col-span-4 flex flex-col items-center text-center relative">
                         <button onClick={() => toggleFavorite(match.away)} className="absolute -top-3 right-1 p-1 z-10">
-                          <Star className={`w-4 h-4 ${favorites.includes(match.away)?'fill-amber-400 text-amber-400':'text-slate-700'}`}/>
+                          <Star className={`w-4 h-4 ${favorites.includes(match.away)?'fill-amber-400 text-amber-400':'text-gray-200'}`}/>
                         </button>
-                        <span className="font-black text-sm text-slate-200">{match.away}</span>
-                        <span className="text-[11px] text-slate-400 truncate max-w-full">{awayName}</span>
+                        {awayFlag ? <img src={`https://flagcdn.com/w40/${awayFlag}.png`} alt={match.away} className="h-6 mb-1 rounded-sm shadow-sm object-contain" /> : <div className="h-6 mb-1 text-xl">🏳️</div>}
+                        <span className="font-black text-xs text-gray-700">{match.away}</span>
+                        <span className="text-[10px] text-gray-400 truncate max-w-full">{awayName}</span>
                       </div>
                     </div>
                     {renderScoreControls(match.id)}
@@ -614,37 +619,38 @@ export default function App() {
         {/* ══════ TABLAS ══════ */}
         {activeTab === 'tables' && (
           <div className="space-y-4">
-            <div className="bg-slate-900 border border-slate-800/80 p-4 rounded-2xl shadow-xl">
-              <h2 className="text-sm font-black text-emerald-400 tracking-wider mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4"/> POSICIONES — GRUPO {selectedGroup}
+            <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
+              <h2 className="text-sm font-black text-gray-800 tracking-wider mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-500"/> POSICIONES — GRUPO {selectedGroup}
               </h2>
               <div className="grid grid-cols-6 gap-1.5 mb-4">
                 {Object.keys(INITIAL_GROUPS).map(g => (
                   <button key={g} onClick={() => setSelectedGroup(g)}
-                    className={`py-1.5 text-center font-bold text-[11px] rounded-lg transition-all ${selectedGroup===g?'bg-emerald-500 text-slate-950 scale-105':'bg-slate-950 text-slate-400'}`}>
+                    className={`py-1.5 text-center font-bold text-[11px] rounded-xl border-2 transition-all ${selectedGroup===g?'bg-blue-500 text-white border-blue-400 scale-105 shadow-md':'bg-gray-50 text-gray-500 border-gray-100'}`}>
                     {g}
                   </button>
                 ))}
               </div>
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="text-slate-500 border-b border-slate-800 font-bold uppercase text-[10px]">
+                  <tr className="text-gray-400 border-b border-gray-100 font-bold uppercase text-[10px]">
                     <th className="py-2">Equipo</th><th className="py-2 text-center">PJ</th>
                     <th className="py-2 text-center">GF</th><th className="py-2 text-center">DG</th>
-                    <th className="py-2 text-right text-emerald-400">Pts</th>
+                    <th className="py-2 text-right text-blue-600">Pts</th>
                   </tr>
                 </thead>
                 <tbody>
                   {calculateGroupTable(selectedGroup as GroupId).map((row, idx) => (
-                    <tr key={row.team} className={`border-b border-slate-800/40 ${idx < 2 ? 'bg-emerald-950/10' : ''}`}>
+                    <tr key={row.team} className={`border-b border-gray-100 ${idx < 2 ? 'bg-blue-50/60' : ''}`}>
                       <td className="py-2.5 font-bold flex items-center gap-2">
-                        <span className="text-[10px] text-slate-500 w-3">{idx+1}</span>
-                        <span className="text-slate-200">{row.name}</span>
+                        <span className="text-[10px] text-gray-400 w-3">{idx+1}</span>
+                        {FLAGS[row.team] ? <img src={`https://flagcdn.com/w20/${FLAGS[row.team]}.png`} alt={row.team} className="w-5 rounded-[2px] shadow-sm object-contain" /> : <span className="text-lg leading-none">🏳️</span>}
+                        <span className="text-gray-700">{row.name}</span>
                       </td>
-                      <td className="py-2.5 text-center text-slate-400">{row.p}</td>
-                      <td className="py-2.5 text-center text-slate-400">{row.gf}</td>
-                      <td className="py-2.5 text-center font-semibold text-slate-300">{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
-                      <td className="py-2.5 text-right font-black text-emerald-400 text-sm">{row.pts}</td>
+                      <td className="py-2.5 text-center text-gray-500">{row.p}</td>
+                      <td className="py-2.5 text-center text-gray-500">{row.gf}</td>
+                      <td className="py-2.5 text-center font-semibold text-gray-600">{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
+                      <td className="py-2.5 text-right font-black text-blue-600 text-sm">{row.pts}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -655,31 +661,32 @@ export default function App() {
 
         {/* ══════ TERCEROS ══════ */}
         {activeTab === 'thirds' && (
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
-            <h2 className="text-sm font-black text-emerald-400 tracking-wider mb-2 flex items-center gap-2">
-              <Award className="w-4 h-4"/> MEJORES TERCEROS
+          <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
+            <h2 className="text-sm font-black text-gray-800 tracking-wider mb-2 flex items-center gap-2">
+              <Award className="w-4 h-4 text-blue-500"/> MEJORES TERCEROS
             </h2>
-            <p className="text-[11px] text-slate-400 mb-4 leading-relaxed">
+            <p className="text-[11px] text-gray-400 mb-4 leading-relaxed">
               Los 8 mejores terceros de los 12 grupos clasifican a Dieciséisavos.
             </p>
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="text-slate-500 border-b border-slate-800 font-bold uppercase text-[10px]">
+                <tr className="text-gray-400 border-b border-gray-100 font-bold uppercase text-[10px]">
                   <th className="py-2">Equipo</th><th className="py-2 text-center">PJ</th>
-                  <th className="py-2 text-center">DG</th><th className="py-2 text-right text-emerald-400">Pts</th>
+                  <th className="py-2 text-center">DG</th><th className="py-2 text-right text-blue-600">Pts</th>
                 </tr>
               </thead>
               <tbody>
                 {getAllThirds().map((row, idx) => (
-                  <tr key={row.team} className="border-b border-slate-800/40 bg-teal-950/20">
-                    <td className="py-2.5 font-bold">
-                      <span className="text-[10px] text-slate-500 mr-2">{idx+1}</span>
-                      <span className="text-slate-200">{row.name}</span>
-                      <span className="text-[10px] text-emerald-500 ml-1">({row.group})</span>
+                  <tr key={row.team} className="border-b border-gray-100">
+                    <td className="py-2.5 font-bold flex items-center gap-2">
+                      <span className="text-[10px] text-gray-400 w-3">{idx+1}</span>
+                      {FLAGS[row.team] ? <img src={`https://flagcdn.com/w20/${FLAGS[row.team]}.png`} alt={row.team} className="w-5 rounded-[2px] shadow-sm object-contain" /> : <span className="text-lg leading-none">🏳️</span>}
+                      <span className="text-gray-700">{row.name}</span>
+                      <span className="text-[10px] text-blue-500 ml-0.5">({row.group})</span>
                     </td>
-                    <td className="py-2.5 text-center text-slate-400">{row.p}</td>
-                    <td className="py-2.5 text-center text-slate-300 font-semibold">{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
-                    <td className="py-2.5 text-right font-black text-emerald-400 text-sm">{row.pts}</td>
+                    <td className="py-2.5 text-center text-gray-500">{row.p}</td>
+                    <td className="py-2.5 text-center text-gray-600 font-semibold">{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
+                    <td className="py-2.5 text-right font-black text-blue-600 text-sm">{row.pts}</td>
                   </tr>
                 ))}
               </tbody>
@@ -691,11 +698,11 @@ export default function App() {
         {activeTab === 'knockout' && (
           <div>
             {/* Sub-pestañas por fase */}
-            <div className="flex bg-slate-900/40 p-1 rounded-xl mb-4 border border-slate-800 overflow-x-auto gap-0.5">
+            <div className="flex bg-white p-1 rounded-xl mb-4 border border-gray-100 shadow-sm overflow-x-auto gap-0.5">
               {KNOCKOUT_PHASES.map(phase => (
                 <button key={phase} onClick={() => setKoPhase(phase)}
                   className={`flex-shrink-0 py-2 px-3 text-center font-bold text-[11px] rounded-lg transition-all whitespace-nowrap ${
-                    koPhase === phase ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-400'
+                    koPhase === phase ? 'bg-blue-500 text-white shadow-md' : 'text-gray-400'
                   }`}>
                   {PHASE_NAMES[phase]}
                 </button>
@@ -704,29 +711,31 @@ export default function App() {
 
             {/* Título de la fase */}
             <div className="flex items-center gap-2 mb-4">
-              <Trophy className="w-4 h-4 text-emerald-400"/>
-              <h2 className="text-sm font-black text-emerald-400 tracking-wider uppercase">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-blue-600"/>
+              </div>
+              <h2 className="text-sm font-black text-gray-800 tracking-wider uppercase">
                 {PHASE_NAMES[koPhase]}
               </h2>
-              <span className="text-[10px] text-slate-500 font-bold ml-auto">
+              <span className="text-[10px] text-gray-400 font-bold ml-auto">
                 {koMatchesForPhase.length} {koMatchesForPhase.length === 1 ? 'partido' : 'partidos'}
               </span>
             </div>
 
             {/* Info de la fase */}
             {koPhase === 'R32' && (
-              <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-3 mb-4 text-[11px] text-slate-400 leading-relaxed">
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 text-[11px] text-blue-600 leading-relaxed">
                 <p>Los 2 primeros de cada grupo + los 8 mejores terceros avanzan. Los equipos se resuelven automáticamente según tus predicciones de la fase de grupos.</p>
               </div>
             )}
             {koPhase === 'FINAL' && (
-              <div className="bg-yellow-950/30 border border-yellow-500/20 rounded-xl p-3 mb-4 text-[11px] text-yellow-300/80 leading-relaxed text-center font-bold">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-[11px] text-amber-600 leading-relaxed text-center font-black">
                 🏆 LA GRAN FINAL 🏆
               </div>
             )}
 
             {/* Lista de partidos */}
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               {koMatchesForPhase.map(renderKnockoutCard)}
             </div>
           </div>
@@ -735,7 +744,7 @@ export default function App() {
       </main>
 
       {/* ── NAV ── */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 border-t border-slate-900 p-2 flex justify-around items-center z-50 shadow-2xl backdrop-blur-md">
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 p-2 flex justify-around items-center z-50 shadow-lg">
         {tabBtn('fixtures', <Calendar className="w-5 h-5"/>, 'Grupos')}
         {tabBtn('tables',   <Users    className="w-5 h-5"/>, 'Tablas')}
         {tabBtn('thirds',   <Award    className="w-5 h-5"/>, 'Terceros')}
