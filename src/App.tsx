@@ -419,7 +419,7 @@ export default function App() {
             </button>
           )}
           {flag ? (
-            <img src={`https://flagcdn.com/w40/${flag}.png`} alt={team.code} className="h-6 mb-1 rounded-sm shadow-sm object-contain" />
+            <img src={`https://flagcdn.com/w40/${flag}.png`} alt={team?.code} className="h-6 mb-1 rounded-sm shadow-sm object-contain" />
           ) : (
             <div className="h-6 mb-1 flex items-center justify-center text-gray-300 text-xl">🏳️</div>
           )}
