@@ -118,7 +118,7 @@ const OFFICIAL_MATCHES = [
   { id: 'l6', group: 'L', date: '27 JUNIO', time: '18:00', venue: 'Filadelfia', home: 'CRO', away: 'GHA' },
 ];
 
-const UNIQUE_DATES = ['11 JUNIO','12 JUNIO','13 JUNIO','14 JUNIO','15 JUNIO','16 JUNIO','17 JUNIO','18 JUNIO','19 JUNIO','20 JUNIO','21 JUNIO','22 JUNIO','23 JUNIO','24 JUNIO','25 JUNIO','26 JUNIO','27 JUNIO'];
+const UNIQUE_DATES = ['11 JUNIO','12 JUNIO','13 JUNIO','14 JUNIO','15 JUNIO','16 JUNIO','17 JUNIO','18 JUNIO','19 JUNIO','20 JUNIO','21 JUNIO','22 JUNIO','23 JUNIO','24 JUNIO','25 JUNIO','26 JUNIO','27 JUNIO','28 JUNIO','29 JUNIO','30 JUNIO','1 JULIO','2 JULIO','3 JULIO','4 JULIO','5 JULIO','6 JULIO','7 JULIO','9 JULIO','10 JULIO','11 JULIO','14 JULIO','15 JULIO','18 JULIO','19 JULIO'];
 const LS_FAVS = 'mundial2026_favs';
 
 // ═══════════════════════════════════════════
@@ -370,6 +370,7 @@ export default function App() {
   });
 
   const koMatchesForPhase = KNOCKOUT_MATCHES.filter(m => m.phase === koPhase).sort((a,b) => a.num - b.num);
+  const koMatchesForDay   = KNOCKOUT_MATCHES.filter(m => m.date === selectedDate).sort((a,b) => a.num - b.num);
 
   // ── Render helpers ──
 
@@ -561,7 +562,9 @@ export default function App() {
             )}
 
             <div className="space-y-3">
-              {filteredMatches.map(match => {
+              {viewMode === 'day' && koMatchesForDay.length > 0
+                ? koMatchesForDay.map(renderKnockoutCard)
+                : filteredMatches.map(match => {
                 const group = INITIAL_GROUPS[match.group as GroupId];
                 const homeName = (group.teamNames as any)[match.home];
                 const awayName = (group.teamNames as any)[match.away];
