@@ -4,6 +4,14 @@ Registro cronológico de todas las tareas, correcciones e implementaciones reali
 
 ---
 
+## [29-JUNIO-2026]
+
+### Vista "Por Día" extendida a Fase Eliminatoria (`feat`)
+* **Objetivo:** Extender el calendario día a día (pestaña "Grupos → Por Día") para que cubra también las 17 fechas de la fase eliminatoria (28 Jun – 19 Jul). Al navegar a una fecha con partidos de Dieciséisavos, Octavos, Cuartos, Semifinal, Tercer Puesto o Final, se muestran las tarjetas eliminatorias correspondientes en lugar de quedar en blanco. Al abrir la app, la fecha de hoy queda seleccionada automáticamente incluso si cae en la fase eliminatoria.
+* **Estado:** Completado, verificado en QA y desplegado en producción.
+
+---
+
 ## [20-JUNIO-2026]
 
 ### Aumento de Tamaño de Fuente (`style`)
