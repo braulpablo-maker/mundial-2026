@@ -1,3 +1,6 @@
+Cada vez que leas este archivo me lo indicas.
+
+
 # Protocolo de Flujo de Trabajo Estándar (CI/CD y Desarrollo) — Mundial 2026
 
 Este documento establece el **protocolo obligatorio de desarrollo, testing y despliegue** que utilizaremos para cualquier modificación o nueva característica en este proyecto.
