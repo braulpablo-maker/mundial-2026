@@ -150,7 +150,7 @@ const KNOCKOUT_MATCHES: KOMatch[] = [
   { id:'ko78', num:78, phase:'R32', date:'30 JUNIO', time:'14:00', venue:'Filadelfia',      homeRef:'1I',  awayRef:'3_CDFGH', homeTeam: 'FRA', awayTeam: 'SUE' },
   { id:'ko79', num:79, phase:'R32', date:'30 JUNIO', time:'22:00', venue:'Cd. de México',   homeRef:'1A',  awayRef:'3_CEFHI', homeTeam: 'MEX', awayTeam: 'ECU' },
   { id:'ko80', num:80, phase:'R32', date:'1 JULIO',  time:'13:00', venue:'Atlanta',         homeRef:'1L',  awayRef:'3_EHIJK', homeTeam: 'ING', awayTeam: 'RDC' },
-  { id:'ko81', num:81, num:81, phase:'R32', date:'1 JULIO',  time:'21:00', venue:'San Francisco',   homeRef:'1G',  awayRef:'3_AEHIJ', homeTeam: 'BEL', awayTeam: 'SEN' },
+  { id:'ko81', num:81, phase:'R32', date:'1 JULIO',  time:'21:00', venue:'San Francisco',   homeRef:'1G',  awayRef:'3_AEHIJ', homeTeam: 'BEL', awayTeam: 'SEN' },
   { id:'ko82', num:82, phase:'R32', date:'1 JULIO',  time:'17:00', venue:'Seattle',         homeRef:'1D',  awayRef:'3_BEFIJ', homeTeam: 'USA', awayTeam: 'BYH' },
   { id:'ko83', num:83, phase:'R32', date:'2 JULIO',  time:'16:00', venue:'Los Ángeles',     homeRef:'1H',  awayRef:'2J',  homeTeam: 'ESP', awayTeam: 'AUT' },
   { id:'ko84', num:84, phase:'R32', date:'2 JULIO',  time:'20:00', venue:'Toronto',         homeRef:'2K',  awayRef:'2L',  homeTeam: 'POR', awayTeam: 'CRO' },
