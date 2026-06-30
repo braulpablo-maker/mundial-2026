@@ -137,26 +137,27 @@ interface KOMatch {
   id: string; num: number; phase: KnockoutPhase;
   date: string; time: string; venue: string;
   homeRef: string; awayRef: string;
+  homeTeam?: string; awayTeam?: string;
 }
 
 const KNOCKOUT_MATCHES: KOMatch[] = [
   // ── DIECISÉISAVOS DE FINAL (R32) ──
-  { id:'ko73', num:73, phase:'R32', date:'28 JUNIO', time:'16:00', venue:'Los Ángeles',    homeRef:'2A',  awayRef:'2B' },
-  { id:'ko74', num:74, phase:'R32', date:'29 JUNIO', time:'14:00', venue:'Monterrey',      homeRef:'1C',  awayRef:'2F' },
-  { id:'ko75', num:75, phase:'R32', date:'29 JUNIO', time:'17:30', venue:'Boston',          homeRef:'1E',  awayRef:'3_ABCDF' },
-  { id:'ko76', num:76, phase:'R32', date:'29 JUNIO', time:'22:00', venue:'Houston',         homeRef:'1F',  awayRef:'2C' },
-  { id:'ko77', num:77, phase:'R32', date:'30 JUNIO', time:'18:00', venue:'Nueva York/NJ',   homeRef:'2E',  awayRef:'2I' },
-  { id:'ko78', num:78, phase:'R32', date:'30 JUNIO', time:'14:00', venue:'Filadelfia',      homeRef:'1I',  awayRef:'3_CDFGH' },
-  { id:'ko79', num:79, phase:'R32', date:'30 JUNIO', time:'22:00', venue:'Cd. de México',   homeRef:'1A',  awayRef:'3_CEFHI' },
-  { id:'ko80', num:80, phase:'R32', date:'1 JULIO',  time:'13:00', venue:'Atlanta',         homeRef:'1L',  awayRef:'3_EHIJK' },
-  { id:'ko81', num:81, phase:'R32', date:'1 JULIO',  time:'21:00', venue:'San Francisco',   homeRef:'1G',  awayRef:'3_AEHIJ' },
-  { id:'ko82', num:82, phase:'R32', date:'1 JULIO',  time:'17:00', venue:'Seattle',         homeRef:'1D',  awayRef:'3_BEFIJ' },
-  { id:'ko83', num:83, phase:'R32', date:'2 JULIO',  time:'16:00', venue:'Los Ángeles',     homeRef:'1H',  awayRef:'2J' },
-  { id:'ko84', num:84, phase:'R32', date:'2 JULIO',  time:'20:00', venue:'Toronto',         homeRef:'2K',  awayRef:'2L' },
-  { id:'ko85', num:85, phase:'R32', date:'2 JULIO',  time:'00:00', venue:'Vancouver',       homeRef:'1B',  awayRef:'3_EFGIJ' },
-  { id:'ko86', num:86, phase:'R32', date:'3 JULIO',  time:'15:00', venue:'Dallas',          homeRef:'2D',  awayRef:'2G' },
-  { id:'ko87', num:87, phase:'R32', date:'3 JULIO',  time:'19:00', venue:'Miami',           homeRef:'1J',  awayRef:'2H' },
-  { id:'ko88', num:88, phase:'R32', date:'3 JULIO',  time:'22:30', venue:'Kansas City',     homeRef:'1K',  awayRef:'3_DEIJL' },
+  { id:'ko73', num:73, phase:'R32', date:'28 JUNIO', time:'16:00', venue:'Los Ángeles',    homeRef:'2A',  awayRef:'2B',  homeTeam: 'SUD', awayTeam: 'CAN' },
+  { id:'ko74', num:74, phase:'R32', date:'29 JUNIO', time:'14:00', venue:'Monterrey',      homeRef:'1C',  awayRef:'2F',  homeTeam: 'BRA', awayTeam: 'JAP' },
+  { id:'ko75', num:75, phase:'R32', date:'29 JUNIO', time:'17:30', venue:'Boston',          homeRef:'1E',  awayRef:'3_ABCDF', homeTeam: 'ALE', awayTeam: 'PAR' },
+  { id:'ko76', num:76, phase:'R32', date:'29 JUNIO', time:'22:00', venue:'Houston',         homeRef:'1F',  awayRef:'2C',  homeTeam: 'PBA', awayTeam: 'MAR' },
+  { id:'ko77', num:77, phase:'R32', date:'30 JUNIO', time:'18:00', venue:'Nueva York/NJ',   homeRef:'2E',  awayRef:'2I',  homeTeam: 'CMA', awayTeam: 'NOR' },
+  { id:'ko78', num:78, phase:'R32', date:'30 JUNIO', time:'14:00', venue:'Filadelfia',      homeRef:'1I',  awayRef:'3_CDFGH', homeTeam: 'FRA', awayTeam: 'SUE' },
+  { id:'ko79', num:79, phase:'R32', date:'30 JUNIO', time:'22:00', venue:'Cd. de México',   homeRef:'1A',  awayRef:'3_CEFHI', homeTeam: 'MEX', awayTeam: 'ECU' },
+  { id:'ko80', num:80, phase:'R32', date:'1 JULIO',  time:'13:00', venue:'Atlanta',         homeRef:'1L',  awayRef:'3_EHIJK', homeTeam: 'ING', awayTeam: 'RDC' },
+  { id:'ko81', num:81, num:81, phase:'R32', date:'1 JULIO',  time:'21:00', venue:'San Francisco',   homeRef:'1G',  awayRef:'3_AEHIJ', homeTeam: 'BEL', awayTeam: 'SEN' },
+  { id:'ko82', num:82, phase:'R32', date:'1 JULIO',  time:'17:00', venue:'Seattle',         homeRef:'1D',  awayRef:'3_BEFIJ', homeTeam: 'USA', awayTeam: 'BYH' },
+  { id:'ko83', num:83, phase:'R32', date:'2 JULIO',  time:'16:00', venue:'Los Ángeles',     homeRef:'1H',  awayRef:'2J',  homeTeam: 'ESP', awayTeam: 'AUT' },
+  { id:'ko84', num:84, phase:'R32', date:'2 JULIO',  time:'20:00', venue:'Toronto',         homeRef:'2K',  awayRef:'2L',  homeTeam: 'POR', awayTeam: 'CRO' },
+  { id:'ko85', num:85, phase:'R32', date:'2 JULIO',  time:'00:00', venue:'Vancouver',       homeRef:'1B',  awayRef:'3_EFGIJ', homeTeam: 'SUI', awayTeam: 'AGL' },
+  { id:'ko86', num:86, phase:'R32', date:'3 JULIO',  time:'15:00', venue:'Dallas',          homeRef:'2D',  awayRef:'2G',  homeTeam: 'AUS', awayTeam: 'EGI' },
+  { id:'ko87', num:87, phase:'R32', date:'3 JULIO',  time:'19:00', venue:'Miami',           homeRef:'1J',  awayRef:'2H',  homeTeam: 'ARG', awayTeam: 'CAB' },
+  { id:'ko88', num:88, phase:'R32', date:'3 JULIO',  time:'22:30', venue:'Kansas City',     homeRef:'1K',  awayRef:'3_DEIJL', homeTeam: 'COL', awayTeam: 'GHA' },
   // ── OCTAVOS DE FINAL (R16) ──
   { id:'ko89', num:89, phase:'R16', date:'4 JULIO',  time:'14:00', venue:'Houston',         homeRef:'W73', awayRef:'W75' },
   { id:'ko90', num:90, phase:'R16', date:'4 JULIO',  time:'18:00', venue:'Filadelfia',      homeRef:'W74', awayRef:'W77' },
@@ -186,6 +187,7 @@ const KNOCKOUT_MATCHES: KOMatch[] = [
 
 interface TeamRow { team: string; name: string; p: number; w: number; d: number; l: number; gf: number; ga: number; gd: number; pts: number; }
 interface ResolvedTeam { code: string; name: string; }
+type Score = { home: number | string; away: number | string; penalties?: { home: number | string; away: number | string } };
 
 function calcGroupTable(gId: GroupId, scores: Record<string, any>): TeamRow[] {
   const group = INITIAL_GROUPS[gId];
@@ -255,14 +257,39 @@ function resolveAllKnockout(scores: Record<string, any>): KOResolution {
     const score = scores[matchId];
     if (!score || score.home === '' || score.away === '' || score.home === undefined || score.away === undefined) return null;
     const h = +score.home, a = +score.away;
+    const penalties = score.penalties && score.penalties.home !== undefined && score.penalties.away !== undefined
+      ? { home: +score.penalties.home, away: +score.penalties.away }
+      : null;
+
+    if (h === a && penalties && penalties.home !== penalties.away) {
+      const side = (penalties.home > penalties.away) === wantWinner ? 'home' : 'away';
+      return result[matchId]?.[side] || null;
+    }
     if (h === a) return null;
     const side = (h > a) === wantWinner ? 'home' : 'away';
     return result[matchId]?.[side] || null;
+  };
+
+  const getTeamNameByCode = (code: string | undefined | null): string => {
+    if (!code) return code as any;
+    for (const gId of Object.keys(INITIAL_GROUPS) as GroupId[]) {
+      const names = (INITIAL_GROUPS as any)[gId].teamNames as Record<string,string>;
+      if (names && names[code]) return names[code];
+    }
+    return code;
   };
   const phaseOrder: KnockoutPhase[] = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
   for (const phase of phaseOrder) {
     const matches = KNOCKOUT_MATCHES.filter(m => m.phase === phase);
     for (const match of matches) {
+      // If match defines explicit teams, use them directly
+      if (match.homeTeam || match.awayTeam) {
+        result[match.id] = {
+          home: match.homeTeam ? { code: match.homeTeam, name: getTeamNameByCode(match.homeTeam) } : null,
+          away: match.awayTeam ? { code: match.awayTeam, name: getTeamNameByCode(match.awayTeam) } : null,
+        };
+        continue;
+      }
       const resolveRef = (r: string): ResolvedTeam | null => {
         if (r.startsWith('W')) return getWinnerOrLoser(`ko${r.substring(1)}`, true);
         if (r.startsWith('L')) return getWinnerOrLoser(`ko${r.substring(1)}`, false);
@@ -301,8 +328,8 @@ export default function App() {
   const [koPhase, setKoPhase]             = useState<KnockoutPhase>('R32');
   const [status, setStatus]               = useState<'connecting'|'connected'|'error'>('connecting');
 
-  const [globalScores, setGlobalScores]   = useState<Record<string,{home:number|string,away:number|string}>>({});
-  const [unsavedChanges, setUnsavedChanges] = useState<Record<string,{home:number|string,away:number|string}>>({});
+  const [globalScores, setGlobalScores]   = useState<Record<string, Score>>({});
+  const [unsavedChanges, setUnsavedChanges] = useState<Record<string, Score>>({});
   const hasUnsavedChanges = Object.keys(unsavedChanges).length > 0;
   const currentScores = { ...globalScores, ...unsavedChanges };
 
