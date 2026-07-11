@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Users, Award, Plus, Minus, Star, ChevronLeft, ChevronRight, RefreshCw, CloudLightning, Save, Trophy } from 'lucide-react';
 import { ref, onValue, update } from 'firebase/database';
-import { database } from './firebase';
+import { database, authReady } from './firebase';
 
 // ═══════════════════════════════════════════
 //  BANDERAS POR CÓDIGO
@@ -336,14 +336,25 @@ export default function App() {
   const [favorites, setFavorites] = useState<string[]>(() => loadLS(LS_FAVS, ['ARG','MEX','COL','URU']));
   useEffect(() => { localStorage.setItem(LS_FAVS, JSON.stringify(favorites)); }, [favorites]);
 
-  // Firebase sync
+  // Firebase sync: wait for anonymous authentication before reading protected data.
   useEffect(() => {
-    const scoresRef = ref(database, 'global/scores');
-    const unsubscribe = onValue(scoresRef, (snapshot) => {
-      const data = snapshot.val();
-      setGlobalScores(data || {});
-      setStatus('connected');
-    }, () => setStatus('error'));
+    let unsubscribe = () => {};
+
+    authReady.then(() => {
+      const scoresRef = ref(database, 'global/scores');
+      unsubscribe = onValue(scoresRef, (snapshot) => {
+        const data = snapshot.val();
+        setGlobalScores(data || {});
+        setStatus('connected');
+      }, (error) => {
+        console.error('Firebase read error:', error);
+        setStatus('error');
+      });
+    }).catch((error) => {
+      console.error('Firebase anonymous auth error:', error);
+      setStatus('error');
+    });
+
     return () => unsubscribe();
   }, []);
 
