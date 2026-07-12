@@ -173,8 +173,8 @@ const KNOCKOUT_MATCHES: KOMatch[] = [
   { id:'ko99',  num:99,  phase:'QF', date:'11 JULIO', time:'18:00', venue:'Miami',          homeRef:'W91', awayRef:'W92' },
   { id:'ko100', num:100, phase:'QF', date:'11 JULIO', time:'21:00', venue:'Kansas City',    homeRef:'W95', awayRef:'W96' },
   // ── SEMIFINALES (SF) ──
-  { id:'ko101', num:101, phase:'SF', date:'14 JULIO', time:'16:00', venue:'Dallas',         homeRef:'W97',  awayRef:'W98' },
-  { id:'ko102', num:102, phase:'SF', date:'15 JULIO', time:'16:00', venue:'Atlanta',        homeRef:'W99',  awayRef:'W100' },
+  { id:'ko101', num:101, phase:'SF', date:'14 JULIO', time:'16:00', venue:'Dallas',         homeRef:'W97',  awayRef:'W98',  homeTeam:'FRA', awayTeam:'ESP' },
+  { id:'ko102', num:102, phase:'SF', date:'15 JULIO', time:'16:00', venue:'Atlanta',        homeRef:'W99',  awayRef:'W100', homeTeam:'ARG', awayTeam:'ING' },
   // ── 3° Y 4° PUESTO ──
   { id:'ko103', num:103, phase:'3RD',  date:'18 JULIO', time:'18:00', venue:'Miami',        homeRef:'L101', awayRef:'L102' },
   // ── FINAL ──
