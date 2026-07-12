@@ -168,10 +168,10 @@ const KNOCKOUT_MATCHES: KOMatch[] = [
   { id:'ko95', num:95, phase:'R16', date:'7 JULIO',  time:'13:00', venue:'Atlanta',         homeRef:'W86', awayRef:'W88' },
   { id:'ko96', num:96, phase:'R16', date:'7 JULIO',  time:'17:00', venue:'Vancouver',       homeRef:'W85', awayRef:'W87' },
   // ── CUARTOS DE FINAL (QF) ──
-  { id:'ko97',  num:97,  phase:'QF', date:'9 JULIO',  time:'17:00', venue:'Boston',         homeRef:'W89', awayRef:'W90' },
-  { id:'ko98',  num:98,  phase:'QF', date:'10 JULIO', time:'18:00', venue:'Los Ángeles',    homeRef:'W93', awayRef:'W94' },
-  { id:'ko99',  num:99,  phase:'QF', date:'11 JULIO', time:'18:00', venue:'Miami',          homeRef:'W91', awayRef:'W92' },
-  { id:'ko100', num:100, phase:'QF', date:'11 JULIO', time:'21:00', venue:'Kansas City',    homeRef:'W95', awayRef:'W96' },
+  { id:'ko97',  num:97,  phase:'QF', date:'9 JULIO',  time:'17:00', venue:'Boston',         homeRef:'W89', awayRef:'W90', homeTeam:'FRA', awayTeam:'MAR' },
+  { id:'ko98',  num:98,  phase:'QF', date:'10 JULIO', time:'18:00', venue:'Los Ángeles',    homeRef:'W93', awayRef:'W94', homeTeam:'ESP', awayTeam:'BEL' },
+  { id:'ko99',  num:99,  phase:'QF', date:'11 JULIO', time:'18:00', venue:'Miami',          homeRef:'W91', awayRef:'W92', homeTeam:'NOR', awayTeam:'ING' },
+  { id:'ko100', num:100, phase:'QF', date:'11 JULIO', time:'21:00', venue:'Kansas City',    homeRef:'W95', awayRef:'W96', homeTeam:'ARG', awayTeam:'SUI' },
   // ── SEMIFINALES (SF) ──
   { id:'ko101', num:101, phase:'SF', date:'14 JULIO', time:'16:00', venue:'Dallas',         homeRef:'W97',  awayRef:'W98',  homeTeam:'FRA', awayTeam:'ESP' },
   { id:'ko102', num:102, phase:'SF', date:'15 JULIO', time:'16:00', venue:'Atlanta',        homeRef:'W99',  awayRef:'W100', homeTeam:'ARG', awayTeam:'ING' },
