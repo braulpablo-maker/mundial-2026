@@ -159,12 +159,12 @@ const KNOCKOUT_MATCHES: KOMatch[] = [
   { id:'ko87', num:87, phase:'R32', date:'3 JULIO',  time:'19:00', venue:'Miami',           homeRef:'1J',  awayRef:'2H',  homeTeam: 'ARG', awayTeam: 'CAB' },
   { id:'ko88', num:88, phase:'R32', date:'3 JULIO',  time:'22:30', venue:'Kansas City',     homeRef:'1K',  awayRef:'3_DEIJL', homeTeam: 'COL', awayTeam: 'GHA' },
   // ── OCTAVOS DE FINAL (R16) ──
-  { id:'ko89', num:89, phase:'R16', date:'4 JULIO',  time:'14:00', venue:'Houston',         homeRef:'W83', awayRef:'W84' },
+  { id:'ko89', num:89, phase:'R16', date:'4 JULIO',  time:'14:00', venue:'Houston',         homeRef:'W74', awayRef:'W77' },
   { id:'ko90', num:90, phase:'R16', date:'4 JULIO',  time:'18:00', venue:'Filadelfia',      homeRef:'W73', awayRef:'W75' },
   { id:'ko91', num:91, phase:'R16', date:'5 JULIO',  time:'17:00', venue:'Nueva York/NJ',   homeRef:'W76', awayRef:'W78' },
-  { id:'ko92', num:92, phase:'R16', date:'5 JULIO',  time:'21:00', venue:'Cd. de México',   homeRef:'W81', awayRef:'W82' },
-  { id:'ko93', num:93, phase:'R16', date:'6 JULIO',  time:'16:00', venue:'Dallas',          homeRef:'W74', awayRef:'W77' },
-  { id:'ko94', num:94, phase:'R16', date:'6 JULIO',  time:'21:00', venue:'Seattle',         homeRef:'W79', awayRef:'W80' },
+  { id:'ko92', num:92, phase:'R16', date:'5 JULIO',  time:'21:00', venue:'Cd. de México',   homeRef:'W79', awayRef:'W80' },
+  { id:'ko93', num:93, phase:'R16', date:'6 JULIO',  time:'16:00', venue:'Dallas',          homeRef:'W83', awayRef:'W84' },
+  { id:'ko94', num:94, phase:'R16', date:'6 JULIO',  time:'21:00', venue:'Seattle',         homeRef:'W81', awayRef:'W82' },
   { id:'ko95', num:95, phase:'R16', date:'7 JULIO',  time:'13:00', venue:'Atlanta',         homeRef:'W86', awayRef:'W88' },
   { id:'ko96', num:96, phase:'R16', date:'7 JULIO',  time:'17:00', venue:'Vancouver',       homeRef:'W85', awayRef:'W87' },
   // ── CUARTOS DE FINAL (QF) ──
